@@ -1,9 +1,9 @@
 19  Using uC/OS-II
 ==================
 
-uC/OS II is a proprietary[24] real time preemptive kernel with a small footprint. It can be downloaded from www.micrium.com for non commercial purposes. If it is used in a commercial product, there are license fees.
+uC/OS-II was a proprietary[24] real time preemptive kernel with a small footprint. It was developend by Micrium but it could be downloaded from the micrium web site. It was free for non commercial purposes. If it is used in a commercial product, there were license fees. But Micrium was bought by Silicon Labs and sometime after it, the software was made available in GitHub. A company called Weston Embedded assumed the development of the the micrium software including the uc/OS-II.
 
-The main features of uC/OS II are:
+The main features of uC/OS-II are:
 
 -   Preemptive
 -   Coded in (mainly) C
@@ -25,30 +25,56 @@ To port the uC/OS to another system, the following requirements must be attended
 
 ##Download
 
-It couçld be downloaded from Micrium website and a register required). But now, after Micrium was acquired by SiliconLabs, it is now a open source project, housted on  [github](https://github.com/Micrium/uC-OS2). The license now permits commercial use.
+Now, after Micrium was acquired by SiliconLabs, uC/OS-II is a open source project, housted on  [github](https://github.com/weston-embedded/uC-OS2). The license now permits commercial use.
 
 It is composed of a small set of C source and header files common to all platforms and another set, specific to a target. There are also different implementations of memory managers.
 
-|  Folder                                                      |         Files                                             |
-|--------------------------------------------------------------|------------------------------------------------------ ----|
-|  Micrium/Software/uCOS-II/Source                             |  os_cfg_r.h  os_dbg_r.c  os_mbox.c  os_mutex.c  os_sem.c  |
-|                                                              |  os_time.c  ucos_ii.c os_core.c   os_flag.c   os_mem.c    |
-|                                                              |  os_q.c os_task.c  os_tmr.c   ucos_ii.h                   |
-| Micrium/Software/uCOS-II/Ports/ARM-Cortex-M3/Generic/GCC     |  os_cpu.h    os_cpu_a.asm os_cpu_c.c os_dbg.c             |
-|  Project Folder                                              |  os_cfg.h includes.h                                      |
+|  Folder                                    |         Files                                             |
+|--------------------------------------------|-----------------------------------------------------------|
+|  uC-OS2/Source                             |  os_cfg_r.h  os_dbg_r.c  os_mbox.c  os_mutex.c  os_sem.c  |
+|                                            |  os_time.c  ucos_ii.c os_core.c  os_flag.c  os_mem.c      |
+|                                            |  os_q.c  os_task.c  os_tmr.c  ucos_ii.h                   |
+|  uC-OS2/Ports/ARM-Cortex-M/ARMv7-M/GNU     |  os_cpu.h  os_cpu_a.S  os_dbg.c                           |
+|  Project Folder                            |  os_cfg.h  includes.h                                     |
 
 
-The uC/OS II version from Micrium website lacks the port folder entirely. Ports available in the Micrium do not use GCC compiler. A Cortex M3 port for GCC could be found in [github](https://github.com/huyugui/STDFS/tree/master/lcd-demo/ucos/uCOS-II/Ports/ARM-Cortex-M3/Generic/GCC)[25]. *But beware!! Both must be compatible. i.e. same version.*
+##Compiling with uC/OS-II
+
+    The following lines in Makefile configure the location of uC/OS-II. The main parameter is UCOS-DIR.
+
+    # UCOS Dir
+    UCOS_DIR=../../../uC-OS2/
+    #UCOS_DIR=uCOS-II
+    UCOS_SRCDIR=${UCOS_DIR}/Source
+    # Ports Dir for uCOS-II
+    UCOS_PORTDIRGNU=${UCOS_DIR}/Ports/ARM-Cortex-M/ARMv7-M/GNU
+    #UCOS_PORTDIR=uCOS-II/Ports/ARM-Cortex-M/GNU
+    # Another directory. This contains os_cpu_c.c
+    UCOS_PORTDIR=${UCOS_DIR}/Ports/ARM-Cortex-M/ARMv7-M
+
 
 ##Configuration
 
-uC/OS is highly configurable. The main configuration is done by editing the file *os_cfg.h*.
+uC/OS is highly configurable. The main configuration is done by editing the file *os_cfg.h*, where a lot
+of functionalities can be enabled or disabled.
 
-##Modifications to Makefile
+For application specific configuration, there is the *app_cfg.h* file. The main parameters are shown below.
 
-1.  Insert the following lines at the beginning
-2.  Modify the line
-3.  Modify the line
+    #define  APP_CFG_STARTUP_TASK_PRIO          3u
+    
+    #define  OS_TASK_TMR_PRIO                  (OS_LOWEST_PRIO - 2u)
+    
+    
+    #define  TASK0_PRIO       (10)
+    #define  TASK1_PRIO       (11)
+    
+    #define  APP_CFG_STARTUP_TASK_STK_SIZE    128u
+    
+    #define TASK0_STACKSIZE                     100
+    #define TASK1_STACKSIZE                     100
+
+There is an *app_hooks.h* file, that is empty, because no hooks are used in this example.
+
 
 ##Tasks
 
@@ -189,10 +215,12 @@ must be modified to
     OS_CPU_PendSVHandler,                     /*      PendSV Handler              */
     OS_CPU_SysTickHandler,                    /*      SysTick Handler             */
 
-##More information
+##References
 
 [uC/OS II on Cortex M](https://www.state-machine.com/qpc/ucos-ii.html)[26]
-[uC/OS II Book](https://www.micrium.com/download/µcos-ii-the-real-time-kernel-2nd-edition/)[27]
-[uC/OS II on Cortex M4 Book](https://www.micrium.com/download/µcos-ii-the-real-time-kernel-for-the-freescale-kinetis/)[28]
+
+[uC/OS II Book](https://www.weston-embedded.com/micrium-books/micrium-books-downloads/category/295-ucos-ii)[27]
+
 [uC/OS II port on Cortex M3 and M4](https://github.com/tony/gpc/tree/master/3rd_party/uCOS-II)[29]
+
 [us/os II port on Cortex M3 Application Note](https://www.element14.com/community/docs/DOC-35592/l/micrium-an1018-application-note-for-μcos-ii-and-the-arm-cortex-m3-processors)[30]

@@ -44,7 +44,7 @@
 
 #include <stdint.h>
 
-/**************************************************************************//**
+/*****************************************************************************
  * CONFIGURATION
  *****************************************************************************/
 /*
@@ -98,10 +98,19 @@ typedef void( *pFunc )( void );
 extern uint32_t __etext;
 extern uint32_t __data_start__;
 extern uint32_t __data_end__;
+/*
+ * These symbols are now defined in the *cmsis_gcc.h* header
+ * file included by the *efm32gg990f1024.h* header file
+ * that is included by the *#include "em_device.h"* directive.
+ *           
+ * When using an old Gecko version, define USING_OLD_GECKO
+ */
+#ifdef USING_OLD_GECKO
 extern uint32_t __copy_table_start__;
 extern uint32_t __copy_table_end__;
 extern uint32_t __zero_table_start__;
 extern uint32_t __zero_table_end__;
+#endif
 extern uint32_t __bss_start__;
 extern uint32_t __bss_end__;
 extern void     __StackTop(void); /* Hans: to use pedantic flag in gcc */
@@ -377,34 +386,10 @@ uint32_t *pTable __attribute__((unused));
 #endif /* __STARTUP_CLEAR_BSS_MULTIPLE || __STARTUP_CLEAR_BSS */
 
 #ifdef __SYSTEM_INIT_AFTER_INIT
-/* SystemInit runs with initialized data */
+/* SystemInit runs with itialized data */
   SystemInit();
+
 #endif
-
-
-    /*
-     * To used the FPU
-     *     Specifify the -mfpu=fpv4-sp-d16 flag,
-     *     Initialize FPU by enabling coprocessors in the CPAR register, as below
-     *
-     * The compiler can use two software interfaces for the FPU:
-     *      -mfloat-abi=hard
-     *       The FPU operations are accessed thru the FPU registers
-     *      -mfloat-abi=softfp
-     *       The FPU operations are accessed thru the softfp calls,
-     *       mantaining compability with  software that uses software floating point.
-     *
-     * The Cortex M3 does not have a FPU!
-     * The Cortex M4 can have a single precision FPU
-     *       It controlled by the CP10 and CP11 fields on the CPAR register
-     * The Cortex M7 can have a single or a single/double precision FPU
-    *       Both are enabled by the CP10 and CP11 fields of the CPACR register
-     *
-    */
-#ifdef __ARM_FP
-   SCB->CPAR |= (0x3<<20)|(0x3<<22);
-#endif
-
     /* Initialize C library */
     _main();
 

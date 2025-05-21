@@ -52,7 +52,7 @@ PROGNAME=freertos1
 # Verbose output for Make (Coment to have verbose output}
 #
 #MAKEFLAGS+= --silent --no-print-directory
-.SILENT:
+#.SILENT:
 
 #
 # Compatibility Windows/Linux
@@ -118,18 +118,24 @@ CMSISDEVINCDIR=${GECKOSDKDIR}/platform/Device/SiliconLabs/EFM32GG/Include
 #     heap_3.c    Uses the malloc/free routines provided
 #     heap_4.c    Full implementation but not deterministic
 #     heap_5.c    Can use multiple memory pools
+
 #
 # FreeRTOS Dir
-FREERTOSDIR=../../../FreeRTOS
+#
+
+#When using only the FreeRTOS Kernel
+FREERTOSDIR=../../../FreeRTOS-Kernel
+# When using the full FreeRTOS (not tested)
+#FREERTOSDIR=../../../FreeRTOS/FreeRTOS/Source
 
 # Virtual path
-VPATH=      $(FREERTOSDIR)/FreeRTOS/Source:\
-            $(FREERTOSDIR)/FreeRTOS/Source/portable/GCC/ARM_CM3:\
-            $(FREERTOSDIR)/FreeRTOS/Source/portable/MemMang
+VPATH=      $(FREERTOSDIR):\
+            $(FREERTOSDIR)/portable/GCC/ARM_CM3:\
+            $(FREERTOSDIR)/portable/MemMang
 
 # FreeRTOS Include Path
-FREERTOSINCPATH=    $(FREERTOSDIR)/FreeRTOS/Source/include \
-                    $(FREERTOSDIR)/FreeRTOS/Source/portable/GCC/ARM_CM3/
+FREERTOSINCPATH=    $(FREERTOSDIR)/include \
+                    $(FREERTOSDIR)/portable/GCC/ARM_CM3/
 
 # FreeRTOS Source Files
 # Some files can be ommited if their funcionalities are not used

@@ -112,7 +112,7 @@ CMSISDEVINCDIR=${GECKOSDKDIR}/platform/Device/SiliconLabs/EFM32GG/Include
 #
 
 # Micrium Dir
-UCOS_DIR=../../../Micrium/Software
+UCOS_DIR=../../..
 #UCOS_DIR=.
 
 # uCOS-III is the main requisite

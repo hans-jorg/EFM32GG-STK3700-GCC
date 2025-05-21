@@ -98,10 +98,19 @@ typedef void( *pFunc )( void );
 extern uint32_t __etext;
 extern uint32_t __data_start__;
 extern uint32_t __data_end__;
+/*
+ * These symbols are now defined in the *cmsis_gcc.h* header
+ * file included by the *efm32gg990f1024.h* header file
+ * that is included by the *#include "em_device.h"* directive.
+ *  
+ * When using an old Gecko version, define USING_OLD_GECKO
+ */
+#ifdef USING_OLD_GECKO
 extern uint32_t __copy_table_start__;
 extern uint32_t __copy_table_end__;
 extern uint32_t __zero_table_start__;
 extern uint32_t __zero_table_end__;
+#endif
 extern uint32_t __bss_start__;
 extern uint32_t __bss_end__;
 extern void     __StackTop(void); /* Hans: to use pedantic flag in gcc */

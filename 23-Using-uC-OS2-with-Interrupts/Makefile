@@ -146,7 +146,7 @@ endif
 #
 
 # UCOS Dir
-UCOS_DIR=../../../Micrium/Software/uC-OS2/
+UCOS_DIR=../../../uC-OS2/
 #UCOS_DIR=uCOS-II
 UCOS_SRCDIR=${UCOS_DIR}/Source
 # Ports Dir for uCOS-II

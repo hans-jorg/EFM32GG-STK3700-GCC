@@ -99,10 +99,10 @@ typedef void( *pFunc )( void );
 extern uint32_t __etext;
 extern uint32_t __data_start__;
 extern uint32_t __data_end__;
-extern uint32_t __copy_table_start__;
-extern uint32_t __copy_table_end__;
-extern uint32_t __zero_table_start__;
-extern uint32_t __zero_table_end__;
+/*extern const __copy_table_t __copy_table_start__;*/
+/*extern const __copy_table_t __copy_table_end__;*/
+/*extern const __copy_table_t __zero_table_start__;*/
+/*extern const __copy_table_t __zero_table_end__;*/
 extern uint32_t __bss_start__;
 extern uint32_t __bss_end__;
 extern void     __StackTop(void); /* Hans: to use pedantic flag in gcc */

@@ -50,7 +50,5 @@ Other mechanisms,like messages, can be used too.
 ##More information
 
 * [uC/OS II on Cortex M](https://www.state-machine.com/qpc/ucos-ii.html)[26]
-* [uC/OS II Book](https://www.micrium.com/download/µcos-ii-the-real-time-kernel-2nd-edition/)[27]
-* [uC/OS II on Cortex M4 Book](https://www.micrium.com/download/µcos-ii-the-real-time-kernel-for-the-freescale-kinetis/)[28]
-* [uC/OS II port on Cortex M3 and M4](https://github.com/tony/gpc/tree/master/3rd_party/uCOS-II)[29]
-* [us/os II port on Cortex M3 Application Note](https://www.element14.com/community/docs/DOC-35592/l/micrium-an1018-application-note-for-μcos-ii-and-the-arm-cortex-m3-processors)[30]
+* [uC/OS II Book](https://www.weston-embedded.com/micrium-books/micrium-books-downloads/category/295-ucos-ii)[27]
+* [uC/OS II on Cortex M4 Book](https://www.weston-embedded.com/micrium-books/micrium-books-downloads/category/295-ucos-ii)[30]

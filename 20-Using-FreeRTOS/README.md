@@ -8,38 +8,39 @@ FreeRTOS is an open source real time preemptive kernel with a small footprint. I
 
 It is composed of a small set of C source and header files common to all platforms and another set, specific to a target. There are also different implementations of memory managers.
 
-FreeRTOS is an open source real time preemptive kernel with a small footprint. It can be downloaded from www.freertos.org.
+FreeRTOS is an open source real time preemptive kernel with a small footprint. It can be downloaded from www.freertos.org but it is hosted on GitHub. IN 2017 FreeRTOS was acquired by Amazon Web Services (AWS) but it is still an open source project using the MIT license. There are commercial versions, OPENRTOS and SAFERTOS, that include support from  *Wittenstein High Integrity Systems*, a partner of AWS.
+
+FreeRTOS was recently expanded and includes additional libraries, including IOT support.In this project, only the Kernel is used and it can be dowloaded from [https://github.com/FreeRTOS/FreeRTOS-Kernel/ repository. Note that the kernel uses sub-modules.
 
 It is composed of a small set of C source and header files common to all platforms and another set, specific to a target. There are also different implementations of memory managers.
 
 | Folder                                               |         Files                                                       |
 |-------------------------------------------------------|---------------------------------------------------------------------|
-|  FreeRTOS/FreeRTOS/Source/include/             | croutine.h mpu_prototypes.h stack_macros.h deprecated_definitions.h <br/> mpu_wrappers.h StackMacros.h event_groups.h portable.h FreeRTOS.h projdefs.h stream_buffer.h <br /> list.h queue.h task.h message_buffer.h semphr.h timers.h                     |
-|  FreeRTOS/FreeRTOS/Source                      |  croutine.c tasks.c event_groups.c list.c queue.c stream_buffer.c timers.c |
-|  FreeRTOS/FreeRTOS/Source/portable/GCC/ARM_CM3 |  port.c and portmacro.h                                                    | 
-|  FreeRTOS/FreeRTOS/Source/portable/MemMang     |  heap_1.c heap_2.c heap_3.c heap_4.c heap_5.c                              |
+|  FreeRTOS/include/             | croutine.h mpu_prototypes.h stack_macros.h deprecated_definitions.h <br/> mpu_wrappers.h StackMacros.h event_groups.h portable.h FreeRTOS.h projdefs.h stream_buffer.h <br /> list.h queue.h task.h message_buffer.h semphr.h timers.h                     |
+|  FreeRTOS-Kernel/                     |  croutine.c tasks.c event_groups.c list.c queue.c stream_buffer.c timers.c |
+|  FreeRTOS-Kernel/portable/GCC/ARM_CM3          |  port.c and portmacro.h                                                    | 
+|  FreeRTOS-Kernel/portable/MemMang              |  heap_1.c heap_2.c heap_3.c heap_4.c heap_5.c                              |
 
 
 FreeRTOS is highly configurable. The main configuration is done by editing the FreeRTOSConfig.h file. Several examples of it can be found in the Demo folder. A tip is to copy one for a similar architecture to the project folder. In this case, the LM3S102 from Texas is a Cortex M3 too.
 
 ### Install
 
-There are at least two ways to install FreeRTOS:
+There are at least two ways to install FreeRTOS-Kernel:
 
 * Using git
 * Download a zip file and uncompress it into a folder.
 
 Using git is the straightforward method. Just run one of the commands below in the folder where FreeRTOS is to be installed.
 
-    git clone https://github.com/FreeRTOS/FreeRTOS.git --recurse-submodules
-    git clone git@github.com:FreeRTOS/FreeRTOS.git --recurse-submodules
+    git clone https://github.com/FreeRTOS/FreeRTOS-Kernel.git --recurse-submodules
+    git clone git@github.com:FreeRTOS/FreeRTOS-Kernel.git --recurse-submodules
 
 If the parameter --recurse-submodules was forgotten, use the command below to correct the situation, or erase the whole FreeRTOS folder and start again.
 
     git submodule update --init --recursive
 
-Using zip, access the download page and choose one of the versions there. There is the current version and a LTS (Long Term Support) version. Unpack it into
-the desired folder.
+Using zip, access the download page and choose one of the versions there. There is the current version and a LTS (Long Term Support) version. Unpack it into the desired folder.
 
 In this case,  the folder is named FreeRTOSvYYYYMM.VV, where YYYY is the year, MM the month and VV the version. Either rename it to FreeRTOS or change the variable
 FREERTOSDIR in the Makefile.
@@ -122,7 +123,7 @@ When using CMSIS, it is necessary to add these lines to the FreeRTOSConfig.h fil
          # FreeRTOS Configuration
          #
          # FreeRTOS Dir
-         FREERTOSDIR=../../FreeRTOS
+         FREERTOSDIR=../../FreeRTOS-Kernel
          # Virtual path
          VPATH=$(FREERTOSDIR)/FreeRTOS/Source $(FREERTOSDIR)/FreeRTOS/Source/portable/GCC/ARM_CM3
          # FreeRTOS Include Path
