@@ -93,10 +93,10 @@ GPIO_P_TypeDef * const GPIOE = &(GPIO->P[4]);           // GPIOE
         Delay(DELAYVAL);
 #else
         // Blinking both LEDs at the same time: -- **
-        GPIOE->DOUT |= LED1|LED2;
+        GPIOE->DOUT |= LED1;
         Delay(2*DELAYVAL);
 
-        GPIOE->DOUT &= ~(LED1|LED2);
+        GPIOE->DOUT &= ~(LED1);
         Delay(DELAYVAL);
 #endif
     }
