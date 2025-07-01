@@ -834,7 +834,8 @@ stack-usage: ${OBJDIR}/${PROGNAME}.axf
 	cd ${OBJDIR} && \
 	find . -name '*.cgraph' | grep -v stack-usage-log | xargs cat > stack-usage-log.cgraph && \
 	find . -name '*.su'     | grep -v stack-usage-log | xargs cat > stack-usage-log.su && \
-	stack-usage --csv stack-usage.csv --json stack-usage.json
+	stack-usage --csv stack-usage.csv --json stack-usage.json && \
+	echo "Output is in /stack-usage.csv and /stack-usage.json files"
 
 
 #
