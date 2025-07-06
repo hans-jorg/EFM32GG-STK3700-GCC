@@ -384,6 +384,9 @@ CDBGFLAGS=
 KDBG=kdbg
 KDBGFLAGS=
 
+## Ozone
+OZONE=ozone
+
 ifneq (${HOSTOS},Windows)
 ## Gede
 GEDE=gede
@@ -791,6 +794,11 @@ endif
 ## INSIDE_VSCODE
 endif
 
+
+# Ozone does not use GDBPROXY!!!
+ozone: ${OBJDIR}/${PROGNAME}.bin
+	echo "Ozone does not use GDB Proxy"
+	${OZONE} ozone  -usb -if swd -device ${PART} -programfile ${OBJDIR}/${PROGNAME}.axf 
 
 #
 # Start GDB proxy

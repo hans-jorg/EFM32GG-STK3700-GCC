@@ -125,7 +125,7 @@ int tryn = 0;
     printf("\n\rUsando printf\n\r");
     
     
-#define TEST 4
+#define TEST 3
 
 #if TEST == 1
     char s[] = { [0 ... 197]='*','\n','\r' }; // Only gcc!!!

@@ -384,6 +384,9 @@ CDBGFLAGS=
 KDBG=kdbg
 KDBGFLAGS=
 
+## Ozone
+OZONE=ozone
+
 
 #
 # GUI Editor
@@ -579,6 +582,7 @@ usage:
 	@echo "make   tui        creates debug session with gdb text user interface"
 	@echo "make   ddd        creates debug session with ddd"
 	@echo "make   nemiver    creates debug session with nemiver"
+	@echo "make   ozone      creates debug session with Ozone"
 	@echo "make dis          disassemble output file into ${OBJDIR}/${PROGNAME}.S"
 	@echo "make dump         generate a hexadecimal dump file into ${OBJDIR}/${PROGNAME}.dump"
 	@echo "make nm           list symbol table in standard output"
@@ -720,6 +724,11 @@ cgdb: ${OBJDIR}/${PROGNAME}.bin ${GDBINIT}
 kdbg: ${OBJDIR}/${PROGNAME}.bin ${GDBINIT}
 	${KDBG}  -r localhost:2331 ${OBJDIR}/${PROGNAME}.axf
 endif
+
+# Ozone does not use GDBPROXY!!!
+ozone: ${OBJDIR}/${PROGNAME}.bin
+	echo "Ozone does not use GDB Proxy"
+	${OZONE} ozone  -usb -if swd -device ${PART} -programfile ${OBJDIR}/${PROGNAME}.axf 
 
 #
 # Start GDB proxy
