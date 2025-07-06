@@ -19,6 +19,7 @@
 #  @param   tui        creates debug session with gdb text user interface
 #  @param   ddd        creates debug session with ddd
 #  @param   nemiver    creates debug session with nemiver
+#  @param   ozone      creates debug session with Ozone
 #  @param size         show code size
 #  @param nm           list symbols
 #  @param dis          disassemble output file into ${OBJDIR}/${PROGNAME}.S
@@ -391,7 +392,7 @@ ifneq (${HOSTOS},Windows)
 ## Gede
 GEDE=gede
 GEDEFLAGS=
-GEDE=
+GEDEINIT=gede.init
 endif
 
 ifneq (${HOSTOS},Windows)
@@ -624,6 +625,7 @@ usage:
 	@echo "make   tui        creates a debug session with gdb text user interface"
 	@echo "make   ddd        creates a debug session with ddd"
 	@echo "make   nemiver    creates a debug session with nemiver"
+	@echo "make   ozone      creates a debug session with Ozone"
 ifneq (${HOSTOS},Windows)
 	@echo "make   seer       creates a debug session using seer"
 	@echo "make   gede       creates a debug session using gede"
@@ -772,15 +774,14 @@ kdbg: ${OBJDIR}/${PROGNAME}.bin ${GDBINIT}
 #
 ifneq (${HOSTOS},Windows)
 gede: ${OBJDIR}/${PROGNAME}.bin
-
-	echo "GdpPath=arm-none-eabi-gdb"              > ${GEDEINIT}
-	echo "LastProgram=${OBJDIR}/${PROGNAME}.bin"  >> ${GEDEINIT}
-	echo "TcpHost=localhost"                      >> ${GEDEINIT}
-	echo "TcpPort=${GDBPORT}"                     >> ${GEDEINIT}
-	echo "InitialBreakpoint=\"main\""             >> ${GEDEINIT}
+	echo "GdpPath=arm-none-eabi-gdb"              >  ${OBJDIR}/${GEDEINIT}
+	echo "LastProgram=${OBJDIR}/${PROGNAME}.bin"  >> ${OBJDIR}/${GEDEINIT}
+	echo "TcpHost=localhost"                      >> ${OBJDIR}/${GEDEINIT}
+	echo "TcpPort=${GDBPORT}"                     >> ${OBJDIR}/${GEDEINIT}
+	echo "InitialBreakpoint=\"main\""             >> ${OBJDIR}/${GEDEINIT}
 	echo "Gede: TBD"
-	gede --projconfig ${GDBINIT}
-	${GEDE}              {OBJDIR}/${PROGNAME}.axf
+	echo ${GEDE} --projconfig ${OBJDIR}/${GEDEINIT} --args ${OBJDIR}/${PROGNAME}.axf
+	${GEDE} --projconfig ${OBJDIR}/${GEDEINIT} --args ${OBJDIR}/${PROGNAME}.axf
 endif
 
 #
