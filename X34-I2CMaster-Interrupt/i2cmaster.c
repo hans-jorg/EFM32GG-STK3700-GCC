@@ -46,19 +46,10 @@
 ///@{
 typedef enum {
         STATE_IDLE,
-        STATE_ERROR,
         STATE_TX_SENDDATA,
-        STATE_TX_STOP,
-        STATE_RX_SENDADDR1,
-        STATE_RX_SENDADDR2,
         STATE_RX_RECEIVEDATA,
-        STATE_RX_STOP,
-        STATE_TXRX_SENDADDR1,
-        STATE_TXRX_SENDADDR2,
         STATE_TXRX_SENDDATA,
-        STATE_TXRX_SENDLAST,
         STATE_TXRX_RECEIVEDATA,
-        STATE_TXRX_STOP,
     } State_t;
 
 typedef enum {
@@ -68,6 +59,10 @@ typedef enum {
         OP_SENDRECEIVE,
         OP_TEST
     } Operation_t;
+
+#define I2C_READ    (1)
+#define I2C_WRITE   (0)
+
 
 typedef enum {
         STATUS_STOPPED,
@@ -85,6 +80,7 @@ typedef struct {
     uint8_t                 outbuffer[I2C_OUTPUT_BUFFER_SIZE+2];
     Status_t                status;
     Operation_t             operation;
+    uint16_t                address;
     State_t                 state;
     uint8_t                 addressbytes;
 } TransferInfo;
@@ -114,17 +110,17 @@ const uint8_t *lim = dest+count;
  *
  * @note    The first address byte for a 10-bit address is 11110XX. The
  */
-static int DecomposeAddress(uint16_t address, uint8_t *pa) {
+static int DecomposeAddress(uint16_t address, uint8_t *pa, uint8_t rw) {
 
     if( address <= 0x77 ) {
-        *pa = (uint8_t) address;
+        *pa = (uint8_t) (address<<1)|rw;
         return 1;
     }
-    if( address <= 1023 ) {
-        *pa++ = ((address&0x300)>>7)|0xF8;
-        *pa   = address&0xFF;
-        return 2;
-    }
+/*    if( address <= 1023 ) {*/
+/*        *pa++ = ((address&0x300)>>7)|0xF8;*/
+/*        *pa   = address&0xFF;*/
+/*        return 2;*/
+/*    }*/
 
     return 0;
 }
