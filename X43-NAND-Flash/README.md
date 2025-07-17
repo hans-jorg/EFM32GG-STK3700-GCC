@@ -773,8 +773,170 @@ YaFFS handles the objects in **chunks**, an unit of allocation, that is typicall
 size.  It also handles bad blocks (old and new) and ECC.
 
 
+Direct Memory Access
+--------------------
+
+Direct Memory Access (DMA) is a mechanism for transfering data between a peripheral and memory
+without demanding the processor to handle the transfer.
+
+The DMA controller in the EFM32GG is an licensed implementation of the PL230 uDMA developed by ARM.
+
+The DMA controller in the EFM32GG features:
+
+* 12 channels
+* Transfer from Memory (RAM/EBI/Flash) to peripheral
+* Transfer from Peripheral to memory (RAM/EBI)
+* Transfer from Memory (RAM/EBI/Flash) to memory (RAM/EBI)
+* Use one descriptor (primary) or two descriptors (primary/alternate)
+* Transfer size: 8, 16 or 32 bits
+* Transfer modes: basic, ping-pong, scatter-gatter (WTF)
+* Programmable transfer length
+* Looped transfers (Channels 1 and 2)
+* 2D transfers (Channel 1)
+* Interrupt upon transfer clompletion
+
+The DMA controller is configured by:
+* Setting registers of the DMA peripheral
+* Setting descriptor in system memory
+
+### DMA registers
+
+| Register              |                                                               |
+|-----------------------|-----|---------------------------------------------------------|
+| DMA_STATUS            |R    | DMA Status Registers                                    |
+| DMA_CONFIG            |R    | DMA Configuration Register                              |
+| DMA_CTRLBASE          |RW   | Channel Control Data Base Pointer Register              |
+| DMA_ALTCTRLBASE       |R    | Channel Alternate Control Data Base Pointer Register    |
+| DMA_CHWAITSTATUS      |R    | Channel Wait on Request Status Register                 |
+| DMA_CHSWREQ           |W1   | Channel Software Request Register                       |
+| DMA_CHUSEBURSTSR      |RW1H | Channel Useburst Set Register                           |
+| DMA_CHUSEBURSTC       |W1   | Channel Useburst Clear Register                         |
+| DMA_CHREQMASKSR       |W1   | Channel Request Mask Set Register                       |
+| DMA_CHREQMASKC        |W1   | Channel Request Mask Clear Register                     |
+| DMA_CHENSR            |RW1  | Channel Enable Set Register                             |
+| DMA_CHENC             |W1   | Channel Enable Clear Register                           |
+| DMA_CHALTSR           |W1   | Channel Alternate Set Register                          |
+| DMA_CHALTC            |W1   | Channel Alternate Clear Register                        |
+| DMA_CHPRIS            |RW1  | Channel Priority Set Register                           |
+| DMA_CHPRIC            |W1   | Channel Priority Clear Register                         |
+| DMA_ERRORC            |RW   | Bus Error Clear Register                                |
+| DMA_CHREQSTATUS       |R    | Channel Request Status                                  |
+| DMA_CHSREQSTATUS      |R    | Channel Single Request Status                           |
+| DMA_IF                |R    | Interrupt Flag Register                                 |
+| DMA_IFS               |W1   | Interrupt Flag Set Register                             |
+| DMA_IFC               |W1   | Interrupt Flag Clear Register                           |
+| DMA_IEN               |R    | WInterrupt Enable register                              |
+| DMA_CTRL              |RW   | DMA Control Register                                    |
+| DMA_RDS               |RW   | DMA Retain Descriptor State                             |
+| DMA_LOOP0             |RWH  | Channel 0 Loop Register                                 |
+| DMA_LOOP1             |RW   | Channel 1 Loop Register                                 |
+| DMA_RECT0             |RWH  | Channel 0 Rectangle Register                            |
+| DMA\_CH0\_CTRL        |RW   | Channel Control Register                                |
+| DMA\_CHx\_CTRL        |RW   | Channel Control Register                                |
+| ...                   |...  | ...                                                     |
+| DMA\_CH11\_CTRL       |RW   | Channel Control Register                                |
 
 
+### Channel control data structure
+
+There must be a contiguous area that both the DMA controller and the host processor can access.
+
+This area must start at an address multiple of 256.
+The controller uses the lower 8 address bits to enable it to access all of the elements
+in the structure and therefore the base address must be at 0xXXXXXX00. It address must be written to
+the DMA_CTRLBASE register.
+
+Its size must lie between 16 bytes, when using only Channel 0, to 384 when using all primary and
+alternate channels. For example, when using Channels 0 to 3, only 64 bytes are needed.
+
+
+| Offset  | Description                                      |
+|---------|--------------------------------------------------|
+|      +0 | Primary Channel 0                                |
+|     +10 | Primary Channel 1                                |
+|     +20 | Primary Channel 2                                |
+|     +30 | Primary Channel 3                                |
+|     +40 | Primary Channel 4                                |
+|     +50 | Primary Channel 5                                |
+|     +60 | Primary Channel 6                                |
+|     +70 | Primary Channel 7                                |
+|     +80 | Primary Channel 8                                |
+|     +90 | Primary Channel 9                                |
+|     +A0 | Primary Channel 10                               |
+|     +B0 | Primary Channel 11                               |
+|     +C0 | One past the end                                 |
+|    ...  | ...                                              |
+|    +100 | Primary Channel 0                                |
+|    +110 | Primary Channel 1                                |
+|    +120 | Primary Channel 2                                |
+|    +130 | Primary Channel 3                                |
+|    +140 | Primary Channel 4                                |
+|    +150 | Primary Channel 5                                |
+|    +160 | Primary Channel 6                                |
+|    +170 | Primary Channel 7                                |
+|    +180 | Primary Channel 8                                |
+|    +190 | Primary Channel 9                                |
+|    +1A0 | Primary Channel 10                               |
+|    +1B0 | Primary Channel 11                               |
+|    +1C0 | One paste the end                                |
+
+Each channel structure is 16 bytes long and has the following format.
+
+| Offset  |   Description                                    |
+|---------|--------------------------------------------------|
+|     +0  | Source End Pointer (*src\_data\_end_pt*)         |
+|     +4  | Destination End Pointer (*dst\_data\_end_pt*)    |
+|     +8  | Control                                          |
+|     +C  | Not used. Data can be store in it                |
+
+The pointer fields are not written by the controller.
+
+The control word has the following format
+
+| Bit field | Description                                    |
+|-----------|------------------------------------------------|
+|  31-30    | Destination address increment (*dst\_inc*)     |
+|  29-28    | Destination data size (*dst\_size*)            |
+|  27-26    | Source address increment (*src\_inc*)          |
+|  25-24    | Source size (*src\_size*)                      |
+|  23-22    | Not used. Must be 0b00                         |
+|  21-21    | Destination HPROT (*dst\_prot\_ctrl*)          |
+|  20-19    | Not used. Must be 0b00                         |
+|  18-18    | Source HPROT (*src\_prot\_ctrl*)               |
+|  17-14    | M. Arbitrate after 2^M DMA Transfers (max 1024)|
+|  13- 4    | Number of transfers minus one (*n_minus_1*)    |
+|   3- 3    |  (*next\_userburst*)                           |
+|   2- 0    | Operating mode (*cycle_ctrl*)                  |
+
+
+The increments are defined by respective source or destination filter.
+
+| Value    | Byte (0b00)   | Halfword(0x01)|   Word (0b10) |
+|----------|---------------|---------------|---------------|
+|   0b00   | byte          | reserved      | reserved      |
+|   0b01   | halfword      | halfword      | reserved      |
+|   0b10   | word          | word          | word          |
+|   0b11   | no increment  | no increment  | no increment  |
+
+| Mode  | Description                                      |
+|-------|--------------------------------------------------|
+| ob000 | Stop                                             |
+| 0b001 | Basic                                            |
+| 0b010 | Auto-request                                     |
+| 0b011 | Ping-Pong                                        |
+| 0b100 | Memory scatter/gather. Primary.                  |
+| 0b101 | Memory scatter/gather. Alternate.                |
+| 0b110 | Peripheral scatter/gather. Primary               |
+| 0b111 | Peripheral scatter/gather. Alternate.            |
+
+Calculation of source address and destination address
+
+| src_inc  | dst_inc | Source Address                    | Destination Address                |
+|----------|---------|-----------------------------------|------------------------------------|
+|  0b00    |  0b00   | src_data_end_ptr - n_minus_1      | dst_data_end_ptr - n_minus_1       |
+|  0b01    |  0b01   | src_data_end_ptr - (n_minus_1<<1) | dst_data_end_ptr - (n_minus_1<<1)  |
+|  0b10    |  0b10   | src_data_end_ptr - (n_minus_1<<2) | dst_data_end_ptr - (n_minus_1<<2)  |
+|  0b11    |  0b11   | src_data_end_ptr                  | dst_data_end_ptr                   |
 
 Annex A - EBI Pin Usage
 =======================
@@ -853,3 +1015,4 @@ References
 3. [A Robust Flash File System Since 2002](https://yaffs.net/)
 4. [LittleFS](https://github.com/littlefs-project/littlefs)
 5. [SPIFFS (SPI Flash File System)](https://github.com/pellepl/spiffs)
+6. [PrimeCell DMA Controller (PL230) Technical Reference Manual ](https://developer.arm.com/documentation/ddi0417/a/?lang=en)

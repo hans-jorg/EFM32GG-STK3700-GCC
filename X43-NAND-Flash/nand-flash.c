@@ -1,6 +1,30 @@
 /**
  * @file nand-flash.c
- * @brief Interface routine for the NAND256 Flash device in the EFM32GG-STK3700 board
+ * @brief Interface routine for the NAND256-A Flash device in the EFM32GG-STK3700 board
+ *
+ * @note  The device is a NAND256W3A from ST Electronics.
+ *
+ * @note  THe most important characteristics are shown in the table below.
+ *
+ *  | Parameter              |  Value     | Unit  | Description                                  |
+ *  |------------------------|------------|-------|----------------------------------------------|
+ *  | Memory size            |       256  | Mbit  |
+ *  | Bus width              |         8  | bits  |
+ *  | # Pages                |        32  | blocks|
+ *  | # Blocks               |      2048  | bits  |
+ *  | #Program/Erase cycles  |   100.000  | cycles|
+ *  | #Data Retention        |        10  | years |
+ *  | Page size              |    512+16  | bytes |
+ *  | Block size             | 16384+512  | bytes |
+ *  | Spare size             |        16  | bytes |
+ *  | Block erase time       |         2  | ms    |
+ *  | Random access          |        10  | us    |
+ *  | Sequential access      |        50  | ns    |
+ *  | Page program time      |       200  | us    |
+ *  | Minimun # Valid blocks |      2008  | blocks|
+ *
+ * @note
+ *      The NAND device is powered thru a TS4A3166 switch, controlled by NAND_PWR_EN.
  *
  * @note
  *      It will be used as the device interface for the FatFS middleware
@@ -10,31 +34,32 @@
  * @version 1.0.0
  * Date:    7 October 2023
  *
- */
-/*
- * @note  ìnout
  *
- * | MCU Pin | PCB Signal  |  NAND Signal | MCU Signal  | Description                   |
- * |---------|-------------|--------------|-------------|-------------------------------|
- * | PD13    | NAND_WP#    |    WP#       | GPIO_PD13   | Write Protect                 |
- * | PD14    | NAND_CE#    |    E#        | GPIO_PD14   | Chip Enable                   |
- * | PD15    | NAND_R/B#   |    R/B#      | GPIO_PD15   | Ready/Busy indicator          |
- * | PC1     | NAND_ALE    |    AL        | EBI_A24     | Address Latch Enable/A24      |
- * | PC2     | NAND_CLE    |    CL        | EBI_A25     | Command Latch Enable/A25      |
- * | PF8     | NAND_WE#    |    W#        | EBI_WEn     | Write Enable                  |
- * | PF9     | NAND_RE#    |    R#        | EBI_REn     | Read Enable                   |
- * | PE15    | NAND_IO7    |    I/O7      | EBI_AD7     | I/O bit #7                    |
- * | PE14    | NAND_IO7    |    I/O7      | EBI_AD7     | I/O bit #6                    |
- * | PE13    | NAND_IO7    |    I/O7      | EBI_AD7     | I/O bit #5                    |
- * | PE12    | NAND_IO7    |    I/O7      | EBI_AD7     | I/O bit #4                    |
- * | PE11    | NAND_IO7    |    I/O7      | EBI_AD7     | I/O bit #3                    |
- * | PE10    | NAND_IO7    |    I/O7      | EBI_AD7     | I/O bit #2                    |
- * | PE9     | NAND_IO7    |    I/O7      | EBI_AD7     | I/O bit #1                    |
- * | PE8     | NAND_IO7    |    I/O7      | EBI_AD7     | I/O bit #0                    |
- * | PB15    | NAND_PWR_EN |      -       | GPIO_PB15   | Power enable (TS5A3166 switch)|
+ *
+ * @note  Pìnout
+ *
+ * | MCU Pin | PCB Signal  |  NAND Signal | MCU Signal  | Description                    |
+ * |---------|-------------|--------------|-------------|--------------------------------|
+ * | PD13    | NAND_WP#    |    WP#       | GPIO_PD13   | Write Protect                  |
+ * | PD14    | NAND_CE#    |    E#        | GPIO_PD14   | Chip Enable                    |
+ * | PD15    | NAND_R/B#   |    R/B#      | GPIO_PD15   | Ready/Busy indicator           |
+ * | PC1     | NAND_ALE    |    AL        | EBI_A24     | Address Latch Enable/A24       |
+ * | PC2     | NAND_CLE    |    CL        | EBI_A25     | Command Latch Enable/A25       |
+ * | PF8     | NAND_WE#    |    W#        | EBI_WEn     | Write Enable                   |
+ * | PF9     | NAND_RE#    |    R#        | EBI_REn     | Read Enable                    |
+ * | PE15    | NAND_IO7    |    I/O7      | EBI_AD7     | I/O bit #7                     |
+ * | PE14    | NAND_IO6    |    I/O6      | EBI_AD6     | I/O bit #6                     |
+ * | PE13    | NAND_IO5    |    I/O5      | EBI_AD5     | I/O bit #5                     |
+ * | PE12    | NAND_IO4    |    I/O4      | EBI_AD4     | I/O bit #4                     |
+ * | PE11    | NAND_IO3    |    I/O3      | EBI_AD3     | I/O bit #3                     |
+ * | PE10    | NAND_IO2    |    I/O2      | EBI_AD2     | I/O bit #2                     |
+ * | PE9     | NAND_IO1    |    I/O1      | EBI_AD1     | I/O bit #1                     |
+ * | PE8     | NAND_IO0    |    I/O0      | EBI_AD0     | I/O bit #0                     |
+ * | PB15    | NAND_PWR_EN |      -       | GPIO_PB15   | Power enable (TS5A3166 switch) |
  *
  * @note https://catonmat.net/low-level-bit-hacks
  *       https://graphics.stanford.edu/~seander/bithacks.html
+ *
  */
 
 
@@ -45,6 +70,18 @@
 #ifndef BIT
 #define BIT(N)  (1U<<(N))
 #endif
+
+
+/**
+ *  @brief  NAND Flash parameters
+ */
+#define  NAND_SIZE              ()
+#define  NAND_SPARESIZE         (16)
+#define  NAND_PAGESIZE          (512+16)
+#define  NAND_HALFPAGESIZE      (256)
+#define  NAND_MAXADDRESS        (0)
+#define  NAND_BLOCKSIZE         (32)
+
 
 /**
  * @brief Pin Configuration for GPIO
@@ -161,7 +198,7 @@
 static       uint8_t * const pntData     = (uint8_t *) 0x80000000;
 static       uint8_t * const pntAddress  = (uint8_t *) 0x81000000;
 static       uint8_t * const pntCommand  = (uint8_t *) 0x82000000;
-// To make write to or read from NAND Flash easier
+// To make it easy to write to or read from NAND Flash
 #define NAND_DATA       *pntData
 #define NAND_ADDRESS    *pntData
 #define NAND_COMMAND    *pntCommand
@@ -172,12 +209,12 @@ static       uint8_t * const pntCommand  = (uint8_t *) 0x82000000;
  */
 ///@{
 #define BADBLOCKFLAG                     (5)
-#define OKVALUE                         '\xFF'
+#define OKVALUE                          '\xFF'
 #define ECC0_POS                         (6)
 #define ECC1_POS                         (7)
 #define ECC2_POS                         (8)
 
-static uint8_t spare[SPARESIZE];
+static uint8_t spare[NAND_SPARESIZE];
 ///@}
 /**
  * @brief  Auxiliary routines.
@@ -371,6 +408,11 @@ Copyback(int param) {
  *         |   4096      |      30        |
  *         |   8192      |      32        |
  *
+ * @note
+ *
+ *
+ *
+ *
  * @note To correct use the index. The 3 lowest order bit gives the bit index (0 to 7)
  *       The 19 high order bit give the byte index.
  *       Data[index>>3] ^= (1<<(index&0x7));
@@ -483,97 +525,4 @@ int NAND_ReadPage(uint32_t pageaddr, uint8_t *data) {
 
 
     return 0;
-}
-
-
-/**
- * @brief  YAFFS Hardware Interface
- */
-
-
-/**
- * @brief  Write a chunk into flash
- *
- * @note   This function writes the specified chunk data and oob/spare data to flash.
- *         This function should return YAFFS_OK on success or YAFFS_FAIL on failure.
- *         If this is a Yaffs2 device, or Yaffs1 with use_nand_ecc set, then this function
- *         must take care of any ECC that is required.
- */
-int DRIVE_write_chunk(struct yaffs_dev *dev, int nand_chunk,
-            const u8 *data, int data_len,
-            const u8 *oob, int oob_len) {
-
-    return YAFFS_OK;
-}
-
-/**
- *  @brief  Read function
- *
- *  @note  This function reads the specified chunk data and oob/spare data from flash.
- *         This function should return YAFFS_OK on success or YAFFS_FAIL on failure.
- *         If this is a Yaffs2 device, or Yaffs1 with use_nand_ecc set, then this function
- *         must take care of any ECC that is required and set the ecc_result.
- */
-int DRIVE_read_chunk(struct yaffs_dev *dev, int nand_chunk,
-            u8 *data, int data_len,
-            u8 *oob, int oob_len,
-            enum yaffs_ecc_result *ecc_result) {
-
-    return YAFFS_OK;
-}
-
-
-/**
- *  @brief  Erase function
- *
- *  @note   This function erases the specified block. This function should return YAFFS_OK
- *          on success or AFFS_FAIL on failure.
- */
-int DRIVE_erase(struct yaffs_dev *dev, int block_no) {
-
-    return YAFFS_OK;
-}
-
-
-/**
- *  @brief  Mark a bad block
- *
- *  @note   This function is only required for Yaffs2 mode. It marks a block bad.
- */
-int DRIVE_mark_bad(struct yaffs_dev *dev, int block_no) {
-
-    return YAFFS_OK;
-}
-
-
-/**
- *  @brief  Check is a sector is a a bad block
- *
- *  @note   This function is only required for Yaffs2 mode. It check if it is bad.block.
- */
-int DRIVE_check_bad(struct yaffs_dev *dev, int block_no) {
-
-    return YAFFS_OK;
-}
-
-
-/**
- *  @brief  Initialization
- *
- *  @note   This function provides hooks for initialising the flash driver
- */
-int DRIVE_initialise(struct yaffs_dev *dev) {
-
-    return YAFFS_OK;
-}
-
-
-/**
- *  @brief  De-initialization
- *
- *  @note   This function provides hooks for deinitialising the flash driver
- */
-int DRIVE_deinitialise(struct yaffs_dev *dev) {
-
-    return YAFFS_OK;
 }
