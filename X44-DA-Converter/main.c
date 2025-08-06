@@ -16,6 +16,8 @@
  */
 
 #include <stdint.h>
+#include <stdio.h>
+
 #include "em_device.h"
 #include "led.h"
 #include "daconverter.h"
@@ -37,10 +39,10 @@ const unsigned VMAX = 0xFFFU;
 
 unsigned v0 = VMAX/2;
 unsigned v1 = 0;
-    
+
 void GenerateValues(void) {
 
-    DA_SetCombOutput(v0,v1);
+    DAC_SetCombOutput(v0,v1);
     v0++;
     v1++;
     if( v0 == VMAX ) v0 = 0;
@@ -109,16 +111,22 @@ int main(void) {
     SysTick_Config(SystemCoreClock/DIVIDER);
 
     // Initialize DAC
-    unsigned conf = DA_VREF_VDD
-                   |DA_ENABLE_CH0
-                   |DA_ENABLE_CH1
-                   |DA_SINGLE_ENDED_OUTPUT;
-                   
-    DA_Init(conf,500000);
-    
+    unsigned conf = DAC_VREF_VDD
+                   |DAC_SINGLE_ENDED_OUTPUT;
+
+    DAC_Init(conf,500000,DAC_CHN_LOC_0,DAC_CHN_LOC_0);
+
     /* Enable interrupts */
     __enable_irq();
 
     /* Main  loop */
-    while (1) {}
+    char c;
+    while (1) {
+        c = getchar();
+        DAC_SetOutput(0,VMAX);
+        c = getchar();
+        DAC_SetOutput(VMAX/2,VMAX/2);
+        c = getchar();
+        DAC_SetOutput(VMAX,0);
+    }
 }

@@ -8,7 +8,7 @@
 The EFM32GG990F1024 in the STK3700 board has one Digital-Analog converter with
 2 channels when using single-ended terminals or 1 channel when using differential signals.
 
-It is called DAC0, is a 12 bit converter and can work up to 500 Ksps.
+It is called DAC0, it is a 12 bit converter and can work at speeds up to 500 Ksps.
 
 It is possible to configure which pins are used by the DA converter. For the
 EFM32GG990 the following pins are related to the DAC0:
@@ -19,16 +19,45 @@ EFM32GG990 the following pins are related to the DAC0:
 | OUT0ALT     | PC0(0)  | PC1(1)  | PC2(2)  | PC3(3)  | PD0(4)  |
 | OUT1        | PB12(0) |         |         |         |         |
 | OUT1ALT     | PD1(4)  |         |         |         |         |
-| P0          | PC4(0)  |
-| P1          | PD6(0)  |
+| P0          | PC4(0)  |         |         |         |         |
+| P1          | PD6(0)  |         |         |         |         |
+| N0          | PC5(0)  |         |         |         |         |
+| N1          | PD7(0)  |         |         |         |         |
 
 
-> What the hell are P0 and P1 pins?
+in the STK3700 board the following signal are available in the Breakout pads and Expansion Header.
+
+| Signal   | Port pin  |    Breakout pad   | EXP Header    |
+|----------|-----------|-------------------|---------------|
+|  OUT0    |    PB11   |    Sup 5          |     11        |
+|  OUT1    |    PB12   |    Sup 6          |     13        |
+|  OUT0ALT |    PC0    |    Inf 10         |      3        |
+|  OUT0ALT |    PC1    |    Inf 11         |               |
+|  OUT0ALT |    PC2    |    Inf 12         |               |
+|  OUT0ALT |    PC3    |                   |      5        |
+|  OUT0ALT |    PD0    |    Sup 9          |      4        |
+|  OUT1ALT |    PD1    |    Sup 10         |      6        |
+|  P0      |    PC4    |                   |      7        |
+|  P1      |    PD6    |    Sup 16         |     16        |
+|  N0      |    PC5    |                   |      9        |
+|  N1      |    PD7    |    Sup 17         |     15        |
+
+
+
+
+
+The numbers in parenthesis are the LOCATION number used to configure the pin.
+
+> What the hell are N0, N1, P0 and P1 pins?
+
+
+
+
 
 There is a prescaler to divide the peripheral clock (HFPERCLK) and
 to generate the clock for the DA operation (DAC_CLK). The DA frequency is given by
 
-f_{DAC_CLK) = f_{HFPERCLK}/2^{DA0.CTRL.PRESC) 
+f_{DAC_CLK) = f_{HFPERCLK}/2^{DA0.CTRL.PRESC)
 
 
 
@@ -52,7 +81,7 @@ to ALL.
 
 It is also possible to route the output signal to Analog Digital Converter (AD), to an internal OPAMP] or to an Analog Compare Peripheral (ACMP).
 
-Is is possible to reoute the output signal to OUTx pins by set the corresponding bit in DACn_OPAxMUX registers. Note that the OUTPUT field must be set to ADC in order to this routing to work. 
+Is is possible to reoute the output signal to OUTx pins by set the corresponding bit in DACn_OPAxMUX registers. Note that the OUTPUT field must be set to ADC in order to this routing to work.
 
 
 The operation can be monitored by observing the STATUS register, specifically, the CH0DV and CH1DV bits,
@@ -97,7 +126,7 @@ The STK3700 Board has the following signals available on the EXT expansion heade
 
 
 > The DA pins are also used by other peripherals. Observe that the notation EXPn,
-> where n* is the header pin number, is used instead of EXP_HEADERm used in 
+> where n* is the header pin number, is used instead of EXP_HEADERm used in
 > the schematics.
 
 
@@ -128,6 +157,3 @@ The STK3700 Board has the following signals available on the EXT expansion heade
 |         |           |         | ACMP0_O, ETM_TD0                            |
 
 > * PD6 is also used to excite the photo-transistor
-
-
-

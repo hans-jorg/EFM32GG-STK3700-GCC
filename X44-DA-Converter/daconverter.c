@@ -25,7 +25,7 @@
 /**
  *  @brief  Pointer to call backfunction
  */
-static void (*DA_Callback)(int ch) = 0;
+static void (*DAC_Callback)(int ch) = 0;
 
 /**
  *  @brief IRQ Handler for DAC0
@@ -36,14 +36,47 @@ void DAC0_IRQHandler(void) {
     if( DAC0->IF&DAC_IF_CH0) ch |= 1;
     if( DAC0->IF&DAC_IF_CH0) ch |= 2;
 
-    if( DA_Callback ) DA_Callback(ch);
+    if( DAC_Callback ) DAC_Callback(ch);
     // Clear interrupt.
     DAC0->IFC = DAC_IFC_CH0|DAC_IFC_CH1;
 }
 
 
 /**
- *  @brief      DA_Callback
+ *  @brief      DAC_DisableChannels
+ *
+ *  @param     unsingmed mapped as a bitvector. Bit 0 corresponds to CH0 and bit 1, to CH1
+ */
+int DAC_DisableChannels(unsigned bm) {
+
+    if( (bm&DAC_CH0)!=0 ) {
+        DAC0->CH0CTRL &= ~DAC_CH0CTRL_EN;
+    }
+    if( (bm&DAC_CH1)!=0 ) {
+        DAC0->CH0CTRL &= ~DAC_CH1CTRL_EN;
+    }
+    return 0;
+}
+
+
+/**
+ *  @brief      DAC_EnableChannels
+ *
+ *  @param     unsingmed mapped as a bitvector. Bit 0 corresponds to CH0 and bit 1, to CH1
+ */
+int DAC_EnableChannels(unsigned bm) {
+
+    if( (bm&DAC_CH0)!=0 ) {
+        DAC0->CH0CTRL |= DAC_CH0CTRL_EN;
+    }
+    if( (bm&DAC_CH0)!=0 ) {
+        DAC0->CH0CTRL |= DAC_CH0CTRL_EN;
+    }
+    return 0;
+}
+
+/**
+ *  @brief      DAC_Callback
  *
  *  @param      config:
  *  @param      samplerate: desired sample rate
@@ -51,61 +84,87 @@ void DAC0_IRQHandler(void) {
  *  @returns    0=OK, other value in case of error
  *
  */
-int DA_Init(unsigned config, unsigned samplerate) {
+int DAC_Init(unsigned config, unsigned samplerate, int ch0config, int ch1config) {
 unsigned daclkfreq;
 
     /* Enable Clock for GPIO */
     CMU->HFPERCLKDIV |= CMU_HFPERCLKDIV_HFPERCLKEN;     // Enable HFPERCLK
     CMU->HFPERCLKEN0 |= CMU_HFPERCLKEN0_DAC0;           // Enable HFPERCKL for DAC
-    
-    // Just in case
-    DAC0->CH0CTRL &= ~(DAC_CH0CTRL_EN);
-    DAC0->CH1CTRL &= ~(DAC_CH1CTRL_EN);
-    
+
+    // Just in case, disable channels
+    DAC_DisableChannels(DAC_CH0|DAC_CH1);
+
     // configure clock prescaler. It modifies the CTRL register
-    int rc = DA_ReconfigureClock(samplerate);
+    int rc = DAC_ConfigureClock(samplerate);
     if( rc < 0 )
         return -2;
-    
+
+
+    unsigned chs = 0;
+    if( ch0config == DAC_CHN_NOTUSED )
+        chs |= DAC_CH0;
+    if( ch1config == DAC_CHN_NOTUSED )
+        chs |= DAC_CH1;
+
+    // Differential output needs both channels
+    if( config&DAC_DIFFERENTIAL_OUTPUT ) {
+        if( chs != (DAC_CH0|DAC_CH1) )
+            return -3;
+    }
+
     uint32_t dacctrl = _DAC_CTRL_RESETVALUE;
-    
-    if( config&DA_VREF_VDD ) {
+    uint32_t calctrl = _DAC_CAL_RESETVALUE;
+
+    if( config&DAC_VREF_VDD ) {
         dacctrl = (dacctrl&~(_DAC_CTRL_REFSEL_MASK))
                     | (_DAC_CTRL_REFSEL_VDD);
-    } else if( config&DA_VREF_2_5 ) {
+    } else if( config&DAC_VREF_2V5 ) {
         dacctrl = (dacctrl&~(_DAC_CTRL_REFSEL_MASK))
                     | (_DAC_CTRL_REFSEL_2V5);
-    } else if( config&DA_VREF_1_5 ) {
+    } else if( config&DAC_VREF_1V25 ) {
         dacctrl = (dacctrl&~(_DAC_CTRL_REFSEL_MASK))
                     | (_DAC_CTRL_REFSEL_1V25);
     }
     dacctrl &= ~(  _DAC_CTRL_CONVMODE_MASK
                   |_DAC_CTRL_DIFF_MASK
                   |_DAC_CTRL_OUTMODE_MASK);
-    
-    if( config&DA_SINGLE_ENDED_OUTPUT )
+
+    if( config&DAC_SINGLE_ENDED_OUTPUT )
         dacctrl &= ~(DAC_CTRL_DIFF);
-    if( config&DA_DIFFERENTIAL_OUTPUT )
+    if( config&DAC_DIFFERENTIAL_OUTPUT )
         dacctrl |= DAC_CTRL_DIFF;
-        
+
     // Set conversion mode to continuous
     dacctrl |= DAC_CTRL_CONVMODE_CONTINUOUS;
-    
+
     // Set output mode
     dacctrl |= DAC_CTRL_OUTMODE_PIN;
-    
-    if( config&DA_ENABLE_CH0 ) {
+
+    // Adjust calibration
+    if( (config&DAC_VREF_VDD) != 0 ) {
+        DAC0->CAL = DEVINFO->DAC0CAL2;
+    } else if( (config&DAC_VREF_2V5) != 0 ) {
+        DAC0->CAL = DEVINFO->DAC0CAL1;
+    } else if( (config&DAC_VREF_1V25) != 0 ) {
+        DAC0->CAL = DEVINFO->DAC0CAL0;
+    }
+
+    // set control register
+    DAC0->CTRL = dacctrl;
+
+    // Configure channels
+    if( ch0config != DAC_CHN_NOTUSED ) {
         DAC0->CH0CTRL |= DAC_CH0CTRL_EN;
-        if( config&DA_ENABLE_CH0_ALT )
+        if( (ch0config&DAC_CHN_USEALT) != 0 )
             DAC0->OPA0MUX = (DAC0->OPA0MUX&~(_DAC_OPA0MUX_OUTMODE_MASK))
                             |DAC_OPA0MUX_OUTMODE_ALL;
         else
             DAC0->OPA0MUX = (DAC0->OPA0MUX&~(_DAC_OPA0MUX_OUTMODE_MASK))
                             |DAC_OPA0MUX_OUTMODE_MAIN;
-    }    
-    if( config&DA_ENABLE_CH1 ) {
+    }
+    if( ch1config != DAC_CHN_NOTUSED ) {
         DAC0->CH1CTRL |= DAC_CH1CTRL_EN;
-        if( config&DA_ENABLE_CH1_ALT )
+        if( (ch1config&DAC_CHN_USEALT) != 0 )
             DAC0->OPA1MUX = (DAC0->OPA1MUX&~(_DAC_OPA1MUX_OUTMODE_MASK))
                             |DAC_OPA1MUX_OUTMODE_ALL;
         else
@@ -113,22 +172,21 @@ unsigned daclkfreq;
                             |DAC_OPA1MUX_OUTMODE_MAIN;
     }
 
-    // set control register
-    DAC0->CTRL = dacctrl;
+    DAC_EnableChannels(chs);
     return 0;
 }
 
 
 /**
- *  @brief      DA_ReconfigureClock
+ *  @brief      DAC_ReconfigureClock
  *
- *  @note       The CHxDV bit is 1 when data is written and 0 
+ *  @note       The CHxDV bit is 1 when data is written and 0
  *              when it is converted.
  *
  *  @note       The meaning of the returned value are 0 when busy
  *              and 1 when ready, ie, data can be written.
  */
-unsigned DA_Status(void) {
+unsigned DAC_Status(void) {
 uint32_t w = DAC0->STATUS;
 
     return w^(DAC_STATUS_CH0DV|DAC_STATUS_CH1DV);
@@ -137,7 +195,7 @@ uint32_t w = DAC0->STATUS;
 
 
 /**
- *  @brief      DA_ReconfigureClock
+ *  @brief      DAC_ReconfigureClock
  *
  *  @param      samplerate
  *
@@ -146,55 +204,51 @@ uint32_t w = DAC0->STATUS;
  *  @note       Sample rate is limited to 500 Ksps, that
  *              means a clock of 1 MHz for the DAC
  */
-int DA_ReconfigureClock(unsigned samplerate) {
+int DAC_ConfigureClock(unsigned samplerate) {
 
    if( samplerate > MAXSAMPLERATE )
         return -1;
-        
+
     uint32_t daclkfreq = 2*samplerate;
-    
+
     uint32_t hfperclk = ClockGetPeripheralClockFrequency();
-    
+
     uint32_t div = (hfperclk-daclkfreq-1)/daclkfreq;
-    
+
     uint32_t presc = 0;
     while( (1<<presc) < div ) presc++;
-    
+
     if( presc > 7 )
         return -2;
-        
+
     DAC0->CTRL = ((DAC0->CTRL)&~(_DAC_CTRL_PRESC_MASK))
                 |((presc)<_DAC_CTRL_PRESC_SHIFT);
-                
+
     return 0;
 }
 
 
 /**
- *  @brief      DA_EnableOutputs
+ *  @brief      DAC_EnableOutputs
  *
  *  @param      Bit mask specifying which output is to be enabled
  *
  *  @returns
  *
  */
-int DA_EnableOutputs(unsigned bm) {
 
-    // TBD
-    return 0;
-}
 
 
 /**
- *  @brief      DA_SetOutput
+ *  @brief      DAC_SetOutput
  *
  *  @param      ch: channel number 0 or 1
  *  @param      v:  12-bit value
- 
+
  *  @returns
  *
  */
-int DA_SetOutput(int ch, unsigned v) {
+int DAC_SetOutput(int ch, unsigned v) {
 
     v &= 0xFFF; // only 12 bits
     if( ch == 0 )
@@ -205,15 +259,15 @@ int DA_SetOutput(int ch, unsigned v) {
 }
 
 /**
- *  @brief      DA_SetOutput
+ *  @brief      DAC_SetOutput
  *
  *  @param      vch0: 12-bit value for channel number 0
  *  @param      vch1: 12-bit value for channel number 1
- 
+
  *  @returns    always 0
  *
  */
-int DA_SetCombOutput( unsigned vch0, unsigned vch1) {
+int DAC_SetCombOutput( unsigned vch0, unsigned vch1) {
 
     vch0 &= 0xFFF;
     vch1 &= 0xFFF;
@@ -222,7 +276,7 @@ int DA_SetCombOutput( unsigned vch0, unsigned vch1) {
     return 0;
 }
 /**
- *  @brief      DA_SetDifferentialOutput
+ *  @brief      DAC_SetDifferentialOutput
  *
  *  @param      v: value of the desired output
  *                 in range -2047 to +2048
@@ -230,61 +284,61 @@ int DA_SetCombOutput( unsigned vch0, unsigned vch1) {
  *  @returns    always 0
  *
  */
-int DA_SetDifferentialOutput(int v) {
+int DAC_SetDifferentialOutput(int v) {
 
     v &= 0xFFF; // only 11 bits plus sign
     DAC0->CH0DATA = v;
-    
+
     return 0;
 }
 
 
 /**
- *  @brief      DA_SetSineOuput
+ *  @brief      DAC_SetSineOuput
  *
  *  @returns    always 0
  *
  */
-int DA_SetSineOuput(void) {
+int DAC_SetSineOuput(void) {
 
     DAC0->CTRL |= DAC_CTRL_SINEMODE;
     return 0;
 }
 
 /**
- *  @brief      DA_ClearSineOuput
+ *  @brief      DAC_ClearSineOuput
  *
  *  @returns    always 0
  *
  */
-int DA_ClearSineOuput(void) {
+int DAC_ClearSineOuput(void) {
 
     DAC0->CTRL &= ~DAC_CTRL_SINEMODE;
     return 0;
 }
 
 /**
- *  @brief      DA_SetCallback
+ *  @brief      DAC_SetCallback
  *
  *  @param      func: function to be called in case of interrupt
  *
  *  @returns    always 0
  *
  */
-int DA_SetCallback( void(*func)(int)) {
+int DAC_SetCallback( void(*func)(int)) {
 
-    DA_Callback = func;
+    DAC_Callback = func;
     return 0;
 }
 
 
 /**
- *  @brief      DA_DisableIRQ
+ *  @brief      DAC_DisableIRQ
  *
  *  @returns    always 0
  *
  */
-int DA_DisableIRQ(void) {
+int DAC_DisableIRQ(void) {
 
     NVIC_DisableIRQ(DAC0_IRQn);
     return 0;
@@ -292,12 +346,12 @@ int DA_DisableIRQ(void) {
 
 
 /**
- *  @brief      DA_EnableIRQ
+ *  @brief      DAC_EnableIRQ
  *
  *  @returns    always 0
  *
  */
-int DA_EnableIRQ(void) {
+int DAC_EnableIRQ(void) {
 
     DAC0->IEN |= (DAC_IEN_CH0|DAC_IEN_CH1);
     NVIC_ClearPendingIRQ(DAC0_IRQn);
@@ -307,36 +361,34 @@ int DA_EnableIRQ(void) {
 
 
 /**
- *  @brief      DA_DisableChannel
+ *  @brief      DAC_DisableChannel
  *
  *  @param      ch: channel number 0 or 1
  *
  *  @returns    Always 0
  *
  */
-int DA_DisableChannel(int ch) {
+int DAC_DisableChannel(int ch) {
 
     if( ch == 0 ) DAC0->CH0CTRL &= ~(DAC_CH0CTRL_EN);
     if( ch == 1 ) DAC0->CH1CTRL &= ~(DAC_CH1CTRL_EN);
-    
+
     return 0;
 }
 
 
 /**
- *  @brief      DA_EnableChannel
+ *  @brief      DAC_EnableChannel
  *
  *  @param      ch: channel number 0 or 1
  *
  *  @returns    Always 0
  *
  */
-int DA_EnableChannel(int ch) {
+int DAC_EnableChannel(int ch) {
 
     if( ch == 0 ) DAC0->CH0CTRL |= DAC_CH0CTRL_EN;
     if( ch == 1 ) DAC0->CH1CTRL |= DAC_CH1CTRL_EN;
-    
+
     return 0;
 }
-
-
