@@ -24,7 +24,7 @@
 
 // Channel config
 #define DAC_CHN_NOTUSED           (-1)
-#define DAC_CHN_USEALT            (1<<8)
+/*#define DAC_CHN_USEALT            (1<<8)*/
 #define DAC_CHN_LOC_0             (0)
 #define DAC_CHN_LOC_1             (1)
 #define DAC_CHN_LOC_2             (2)

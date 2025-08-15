@@ -153,24 +153,24 @@ unsigned daclkfreq;
     DAC0->CTRL = dacctrl;
 
     // Configure channels
-    if( ch0config != DAC_CHN_NOTUSED ) {
-        DAC0->CH0CTRL |= DAC_CH0CTRL_EN;
-        if( (ch0config&DAC_CHN_USEALT) != 0 )
-            DAC0->OPA0MUX = (DAC0->OPA0MUX&~(_DAC_OPA0MUX_OUTMODE_MASK))
-                            |DAC_OPA0MUX_OUTMODE_ALL;
-        else
-            DAC0->OPA0MUX = (DAC0->OPA0MUX&~(_DAC_OPA0MUX_OUTMODE_MASK))
-                            |DAC_OPA0MUX_OUTMODE_MAIN;
-    }
-    if( ch1config != DAC_CHN_NOTUSED ) {
-        DAC0->CH1CTRL |= DAC_CH1CTRL_EN;
-        if( (ch1config&DAC_CHN_USEALT) != 0 )
-            DAC0->OPA1MUX = (DAC0->OPA1MUX&~(_DAC_OPA1MUX_OUTMODE_MASK))
-                            |DAC_OPA1MUX_OUTMODE_ALL;
-        else
-            DAC0->OPA1MUX = (DAC0->OPA1MUX&~(_DAC_OPA1MUX_OUTMODE_MASK))
-                            |DAC_OPA1MUX_OUTMODE_MAIN;
-    }
+/*    if( ch0config != DAC_CHN_NOTUSED ) {*/
+/*        DAC0->CH0CTRL |= DAC_CH0CTRL_EN;*/
+/*        if( (ch0config&DAC_CHN_USEALT) != 0 )*/
+/*            DAC0->OPA0MUX = (DAC0->OPA0MUX&~(_DAC_OPA0MUX_OUTMODE_MASK))*/
+/*                            |DAC_OPA0MUX_OUTMODE_ALL;*/
+/*        else*/
+/*            DAC0->OPA0MUX = (DAC0->OPA0MUX&~(_DAC_OPA0MUX_OUTMODE_MASK))*/
+/*                            |DAC_OPA0MUX_OUTMODE_MAIN;*/
+/*    }*/
+/*    if( ch1config != DAC_CHN_NOTUSED ) {*/
+/*        DAC0->CH1CTRL |= DAC_CH1CTRL_EN;*/
+/*        if( (ch1config&DAC_CHN_USEALT) != 0 )*/
+/*            DAC0->OPA1MUX = (DAC0->OPA1MUX&~(_DAC_OPA1MUX_OUTMODE_MASK))*/
+/*                            |DAC_OPA1MUX_OUTMODE_ALL;*/
+/*        else*/
+/*            DAC0->OPA1MUX = (DAC0->OPA1MUX&~(_DAC_OPA1MUX_OUTMODE_MASK))*/
+/*                            |DAC_OPA1MUX_OUTMODE_MAIN;*/
+/*    }*/
 
     DAC_EnableChannels(chs);
     return 0;
