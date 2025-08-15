@@ -58,13 +58,24 @@ static inline char * GetStackPointer(void) { return (char *) __get_MSP(); }
 //@{
 #include "uart2.h"
 
-static inline void SerialInit(int chn)           { UART_Init(UART0);                }
-static inline void SerialWrite(int chn, char c)  { UART_SendChar(UART0,c);          }
-static inline int  SerialRead(int chn)           { return UART_GetChar(UART0);      }
-static inline int  SerialStatus(int chn)         { return UART_GetStatus(UART0);    }
-static inline int  SerialFlush(int chn)          { return UART_Flush(UART0);        }
+static inline void SerialInit(int chn)           { UART_Init();                }
+static inline void SerialWrite(int chn, char c)  { UART_SendChar(c);           }
+static inline int  SerialRead(int chn)           { return UART_GetChar();      }
+static inline int  SerialStatus(int chn)         { return UART_GetStatus();    }
+static inline int  SerialFlush(int chn)          { return UART_Flush();        }
 //@}
 
+
+
+/**
+ * @brief   Library initialization
+ *
+ * @note    Must be called before the use of any function
+ */
+
+void _main(void) {
+    SerialInit(0);
+}
 
 
 
@@ -160,14 +171,6 @@ int ch;
     return cnt;
 }
 
-/**
- * @brief   Library initialization
- *
- */
-
-void _main(void) {
-    SerialInit(0);
-}
 
 /**
  * @brief   _exit

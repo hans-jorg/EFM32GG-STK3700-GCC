@@ -16,17 +16,19 @@
 #define UART_TXENS      UART_BIT(1)
 #define UART_RXENS      UART_BIT(0)
 
-void UART_Init(USART_TypeDef *uart);
+void UART_Init(void);
+void UART_ReconfigureClock(void);
 
-unsigned UART_GetStatus(USART_TypeDef *uart);
-void UART_SendChar(USART_TypeDef *uart, char c);
-void UART_SendString(USART_TypeDef *uart, char *s);
-int  UART_Flush(USART_TypeDef *uart);
+unsigned UART_GetStatus(void);
+void UART_SendChar(char c);
+void UART_SendString(char *s);
+void UART_PutCharPolling(char ch);
 
-unsigned UART_GetChar(USART_TypeDef *uart);
-unsigned UART_GetCharNoWait(USART_TypeDef *uart);
 
-#define UART_TXINT  0x01
-#define UART_RXINT  0x02
+unsigned UART_GetChar(void);
+unsigned UART_GetCharNoWait(void);
+void UART_GetString(char *s, int n);
+
+int UART_Flush(void);
 
 #endif // UART_H
