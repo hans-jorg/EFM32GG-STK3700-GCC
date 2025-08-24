@@ -25,7 +25,7 @@
 
 #include "em_device.h"
 #include "clock_efm32gg_ext.h"
-#include "uart.h"
+#include "uart2.h"
 #include "buffer.h"
 
 /**
@@ -54,6 +54,8 @@ static GPIO_P_TypeDef * const GPIOE = &(GPIO->P[4]);    // GPIOE
 /// GPIO Port used for enable transceiver
 static GPIO_P_TypeDef * const GPIOF = &(GPIO->P[5]);    // GPIOF
 
+// Forward definition of function to configure clock
+static void UART_ConfigureClock(void);
 
 
 /**
@@ -137,9 +139,7 @@ uint32_t bauddiv;
     UART0->CTRL  = _UART_CTRL_RESETVALUE|UART_CTRL_OVS_X16;         // Set field
 
     // Baud rate
-    bauddiv = (ClockGetPeripheralClockFrequency()*4)/(OVERSAMPLING*BAUD)-4;
-    UART0->CLKDIV = bauddiv<<_UART_CLKDIV_DIV_SHIFT;
-
+    UART_ConfigureClock();
 
     // Configure PF7 (Enable Transceiver)
     GPIOF->MODEL &= ~_GPIO_P_MODEL_MODE7_MASK;          // Clear field
@@ -172,6 +172,51 @@ uint32_t bauddiv;
 
 
 /**
+ * @brief   UART_ConfigureClock
+ *
+ * @note    Called at the initialization (UART_Init)
+ *
+ */
+
+static void UART_ConfigureClock(void) {
+uint32_t bauddiv;
+
+    bauddiv = (ClockGetPeripheralClockFrequency()*4)/(OVERSAMPLING*BAUD)-4;
+    UART0->CLKDIV = bauddiv<<_UART_CLKDIV_DIV_SHIFT;
+
+}
+
+/**
+ * @brief   ReconfigureClock
+ *
+ * @note    Must be called whenever the clock frequency changes
+ */
+
+void UART_ReconfigureClock(void) {
+
+    // Disable UART
+    UART0->CMD  = UART_CMD_TXDIS|UART_CMD_RXDIS;
+
+    // Disable interrupts on NVIC
+    NVIC_DisableIRQ(UART0_RX_IRQn);
+    NVIC_DisableIRQ(UART0_TX_IRQn);
+    
+    // Reconfigure clock divider
+    UART_ConfigureClock();
+
+    // Re-enable interrupts on NVIC
+    NVIC_ClearPendingIRQ(UART0_RX_IRQn);
+    NVIC_ClearPendingIRQ(UART0_TX_IRQn);
+    NVIC_EnableIRQ(UART0_RX_IRQn);
+    NVIC_EnableIRQ(UART0_TX_IRQn);
+    
+    // Disable and then enable RX and TX
+    UART0->CMD  = UART_CMD_TXDIS|UART_CMD_RXDIS;
+    UART0->CMD  = UART_CMD_TXEN|UART_CMD_RXEN;
+}
+
+
+/**
  * @brief   UART Interrupt routine for receiving data
  *
  * @note    Receives and put it in buffer
@@ -180,15 +225,12 @@ uint32_t bauddiv;
 void UART0_RX_IRQHandler(void) {
 uint8_t ch;
 
-    if ( UART0->IF&(UART_IF_RXDATAV|UART_IF_RXFULL) ) {
+    if( UART0->STATUS&UART_STATUS_RXDATAV ) {
         // Put in input buffer
         ch = UART0->RXDATA;
-//        ENTER_ATOMIC();
         (void) buffer_insert(inputbuffer,ch);
-//        EXIT_ATOMIC();
     }
-//  UART0->IFS |= UART_IFS_TXC;
-//  UART0->IFC = UART_IFC_RXFULL|UART_IFC_RXOF;
+
 }
 
 
@@ -211,7 +253,7 @@ uint8_t ch;
                 UART0->TXDATA = ch;
             }
         }
-       UART0->IFC = UART_IFC_TXC;
+        UART0->IFC = UART_IFC_TXC;
     }
 }
 
@@ -234,13 +276,16 @@ uint32_t w;
  * @note    Generates an interrupt to send char
  */
 
-void UART_SendChar(char ch) {
+void UART_SendChar(char c) {
+
     if ( buffer_empty(outputbuffer) ) {
-        while ( (UART0->STATUS&UART_STATUS_TXBL) == 0 ) {}
-        UART0->TXDATA = ch;
+        ENTER_ATOMIC();
+        buffer_insert(outputbuffer,c);
+        UART0->IFS |= UART_IFS_TXC;
+        EXIT_ATOMIC();
     } else {
         ENTER_ATOMIC();
-        buffer_insert(outputbuffer,ch);
+        (void) buffer_insert(outputbuffer,c);
         EXIT_ATOMIC();
     }
 }
@@ -260,19 +305,15 @@ void UART_SendString(char *s) {
 /**
  * @brief   Get a char from UART without waiting
  *
- * @note    Does not block. Returns 0 when there is none
+ * @note    Does no block. Returns 0 when there is none
  */
 
 unsigned UART_GetCharNoWait(void) {
-int ch;
 
     if( buffer_empty(inputbuffer) )
         return 0;
 
-    ENTER_ATOMIC();
-    ch = buffer_remove(inputbuffer);
-    EXIT_ATOMIC();
-    return ch;
+    return buffer_remove(inputbuffer);
 }
 
 /**
@@ -282,36 +323,22 @@ int ch;
  */
 
 unsigned UART_GetChar(void) {
-int ch;
 
     while( buffer_empty(inputbuffer) ) {}
 
-    ENTER_ATOMIC();
-    ch = buffer_remove(inputbuffer);
-    EXIT_ATOMIC();
-    return ch;
+    return buffer_remove(inputbuffer);
 }
 
 /**
- * @brief   Disable interrupts
+ * @brief   Get a string from UART
  *
+ * @note    Does block!!!!!
+ * @note    Not implemented yet
  */
 
-void UART_EnableInterrupts(uint32_t m) {
+void UART_GetString(char *s, int n) {
 
-    if( m&UART_TXINT ) UART0->IEN |= UART_IEN_TXC;
-    if( m&UART_RXINT ) UART0->IEN |= UART_IEN_RXDATAV;
-}
-
-/**
- * @brief   Disable interrupts
- *
- */
-
-void UART_DisableInterrupts(uint32_t m) {
-
-    if( m&UART_TXINT ) UART0->IEN &= ~UART_IEN_TXC;
-    if( m&UART_RXINT ) UART0->IEN &= ~UART_IEN_RXDATAV;
+    return;
 }
 
 /**
@@ -356,4 +383,5 @@ int ch;
     UART0->IEN |= UART_IEN_TXC|UART_IEN_RXDATAV;
     return cnt;
 }
+
 
