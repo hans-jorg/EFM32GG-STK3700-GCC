@@ -10,6 +10,9 @@ license. Open source projects do not.
 
 It is a mature, fast and robust software. It can run on Linux, RTOS and barebones systems.
 
+Yaffs2 tries no minimizes rewriting, since Flash device have an upper limit for write operations.
+
+Additionally, it handles the bad blocks, original and the ones that occurs during the device operation,
 From its documentation, on how people treat computers differently from embedded systems
 
 | Issue                         |   Computer                              |     Embedded system                  |
@@ -56,12 +59,14 @@ It is built as a layered system.
 In YAFFS, data is stored as objects, that can be of different types, identified by
 an **object id (obj_id)**.
 
-
 * Regular data files
 * Directories
 * Hard-links
 * Symbolic links
 * Special objects (pipes, devices etc).
+
+
+
 
 The NAND Flash devices are organized in pages, that is the unit of allocation (**chunk**) and
 programming.  The pages (chunks) are grouped in 32 to 128 blocks. The block is the unit of erasure.
@@ -84,6 +89,16 @@ Each chunk has tags associated with it, such as:
 * Byte Count (n_bytes):
 * Serial Number (serial number): (Only Yaffs1)
 
+| Field         |  Description                         | Size for 1 KB chunk | Size for 2 KB chunk |
+|---------------|--------------------------------------|---------------------|---------------------|
+| blockState    | Block state. non-0xFF for bad block  |    1 byte           |    1 byte           |
+| chunkId       | 32-bit chunk Id                      |    4 bytes          |    4 bytes          |
+| objectId      | 32-bit object Id                     |    4 bytes          |    4 bytes          |
+| nBytes        | Number of data bytes in this chunk   |    2 bytes          |    2 bytes          |
+| blockSequence | sequence number for this block       |    4 bytes          |    4 bytes          |
+| tagsEcc       | ECC on tags area                     |    3 bytes          |    3 bytes          |
+| ecc           | ECC, 3 bytes/256 bytes of data       |   12 bytes          |   24 bytes          |
+| Total         |                                      |    30 bytes         |   42 bytes          |
 
 There is a garbage collection mechanism, that erases and reuses outdated (deleted) chunks.
 YAFF2 does not uses deletion marks. It uses:
@@ -101,12 +116,15 @@ API interface
 
 They are POSIX like.
 
-    yaffs_open  yaffs_read  yaffs_close yaffs_write
+    yaffs_open
+    yaffs_read
+    yaffs_close
+    yaffs_write
 
 
 
 
-RTOS interface
+Device Interface
 ---------------
 
 They must be implemented even for barebone systems.

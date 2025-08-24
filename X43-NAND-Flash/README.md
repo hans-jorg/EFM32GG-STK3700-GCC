@@ -79,12 +79,12 @@ NAND Flash device
 
 The ST NAND256W3A features the following:
 
-* 32 MBytes (=256 Mbit)
-* 538/264 Word Page = (=512+16/256+8). The non power of two sizes area due to the spare area(16/8).
+* 32 MBytes (=256 Mbits)
+* 538/264 Word Page = (=512+16/256+8). The non power of two size are due to the spare area (16/8).
 * Multiplexed Data/Address lines with up to 16 bit width.
 * Support to over than 100.000 erases cycles.
-* 8-bit wide data path. Other devices can have 16-bit wide data path.
-* It has at least 2008 valid blocks from 2048.
+* 8-bit wide data path. Other devices of the family can have 16-bit wide data path.
+* It has at least 2008 valid blocks from the original 2048.
 
 
 The table below shows some important parameters of the NAND256
@@ -99,11 +99,14 @@ The table below shows some important parameters of the NAND256
 
 ### Organization
 
-The memory array is organized in blocks, and each block has 32 pages. Each page is 528x8 large
+
+The memory array is organized as 2048 blocks, and each block has 32 pages. Each page is 528x8 large
 and is divided in three parts:
 * 1st half page (256 bytes)
 * 2nd half page (256 bytes)
 * Spare area (16 bytes)
+
+This means that each block has 16KBytes (16384 bytes) of data area and 512 bytes of spare area.
 
 The spare area can be used to store Error Correction Code (ECC) data, software flags,
 Bad Block identification or just to increase the storage area.
@@ -559,8 +562,7 @@ The pins used for this interface are show below.
 
 
 Some pins are controlled directly by the GPIO module. Others by the EBI module. The EBI_ROUTE
-register controls
-which pins are used.
+register controls which pins are used.
 
     | Field        |  Bits    |  Description                           |  Value       |
     |--------------|----------|----------------------------------------|--------------|
@@ -578,6 +580,7 @@ Address map
  |31|30|29|28|27|26|25|24|23|22|21|20|19|18|17|16|15|14|13|12|11|19|09|08|07|06|05|04|03|02|01|00|
  |  |  |  |  |  |  |  |  |  |  |  |  |  |  |  |  |  |  |  |  |  |  |  |  |  |  |  |  |  |  |  |  |
  |     BYTE #3           |     BYTE #2           |     BYTE #1           |     BYTE #0           |
+ |                 |CL|AL|                    Address                                            |
 
 A 256 Mbit/32MByte device needs 24 bits (A0 to A23) to address the full capacity of the device.
 This corresponds to three bytes. The next address bits, A24 and A25, are used to drive the Address
