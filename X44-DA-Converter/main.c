@@ -34,8 +34,8 @@
 
 
 
-const unsigned VMIN = 0;
-const unsigned VMAX = 0xFFFU;
+const unsigned VMIN = DAC_VMIN;
+const unsigned VMAX = DAC_VMAX;
 
 unsigned v0 = VMAX/2;
 unsigned v1 = 0;
@@ -111,10 +111,12 @@ int main(void) {
     SysTick_Config(SystemCoreClock/DIVIDER);
 
     // Initialize DAC
-    unsigned conf = DAC_VREF_VDD
-                   |DAC_SINGLE_ENDED_OUTPUT;
+    unsigned conf = DAC_CONFIG_VREF_VDD
+                   |DAC_CONFIG_SINGLE_ENDED_OUTPUT
+                   |DAC_CONFIG_ENABLE_CH0
+                   |DAC_CONFIG_ENABLE_CH1;
 
-    DAC_Init(conf,500000,DAC_CHN_LOC_0,DAC_CHN_LOC_0);
+    DAC_Init(conf,500000);
 
     /* Enable interrupts */
     __enable_irq();

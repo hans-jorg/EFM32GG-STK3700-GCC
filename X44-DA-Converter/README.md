@@ -1,31 +1,37 @@
-5 Using the DA Converter
-========================
+5 Using the DA Converter ========================
 
 
 ## The DA Converter on the EFM32GG990
 
 
-The EFM32GG990F1024 in the STK3700 board has one Digital-Analog converter with
-2 channels when using single-ended terminals or 1 channel when using differential signals.
+The EFM32GG990F1024 in the STK3700 board has one Digital-Analog converter
+with 2 channels when using single-ended terminals or 1 channel when
+using differential signals.
 
-It is called DAC0, it is a 12 bit converter and can work at speeds up to 500 Ksps.
+It is called DAC0, it is a 12 bit converter and can work at speeds up
+to 500 Ksps.
 
-It is possible to configure which pins are used by the DA converter. For the
-EFM32GG990 the following pins are related to the DAC0:
+It is possible to configure which pins are used by the DA converter. For
+the EFM32GG990 the following pins are related to the DAC0:
+
 
 |  Signal     | Pin(LOC)|         |         |         |         |
 |-------------|---------|---------|---------|---------|---------|
 | OUT0        | PB11(0) |         |         |         |         |
-| OUT0ALT     | PC0(0)  | PC1(1)  | PC2(2)  | PC3(3)  | PD0(4)  |
 | OUT1        | PB12(0) |         |         |         |         |
+| OUT0ALT     | PC0(0)  | PC1(1)  | PC2(2)  | PC3(3)  | PD0(4)  |
 | OUT1ALT     | PD1(4)  |         |         |         |         |
 | P0          | PC4(0)  |         |         |         |         |
 | P1          | PD6(0)  |         |         |         |         |
 | N0          | PC5(0)  |         |         |         |         |
 | N1          | PD7(0)  |         |         |         |         |
 
+>> This version of DAC HAL only uses the main outputs pins: OUT0 and OUT1
 
-in the STK3700 board the following signal are available in the Breakout pads and Expansion Header.
+> What the hell are N0, N1, P0 and P1 pins?
+
+In the STK3700 board the following signals are available in the Breakout
+pads and Expansion Header.
 
 | Signal   | Port pin  |    Breakout pad   | EXP Header    |
 |----------|-----------|-------------------|---------------|
@@ -43,60 +49,69 @@ in the STK3700 board the following signal are available in the Breakout pads and
 |  N1      |    PD7    |    Sup 17         |     15        |
 
 
+>> This version of DAC HAL only uses the main outputs pins: OUT0 and OUT1
+
+
+The numbers in parenthesis are the LOCATION number used to configure
+the pin.
 
 
 
-The numbers in parenthesis are the LOCATION number used to configure the pin.
-
-> What the hell are N0, N1, P0 and P1 pins?
+## Clocking the DAC
 
 
-
-
-
-There is a prescaler to divide the peripheral clock (HFPERCLK) and
-to generate the clock for the DA operation (DAC_CLK). The DA frequency is given by
+There is a prescaler to divide the peripheral clock (HFPERCLK) and to
+generate the clock for the DA operation (DAC_CLK). The DA frequency is
+given by
 
 f_{DAC_CLK) = f_{HFPERCLK}/2^{DA0.CTRL.PRESC)
 
-
-
-> The DAC_CLK should be 1 MHz or less!!!!!!. So keep the PRESC at least at 4 when
-> running at 48 Mhz.
+> The DAC_CLK should be 1 MHz or less!!!!!!. So keep the PRESC at least
+at 4 when > running at 48 Mhz.
 
 About alternate pins, the Reference Manual says
 
-> The DAC channels can also drive an alternative output network, which is described in the Opamp
-> chapter in Section 30.3.1.2 (p. 735) . To enable this network, OUTMODE must be configured to ADC
-> in DACn_CTRL. The actual output network can be configred by configuring DACn_OPAxMUX registers.
+> The DAC channels can also drive an alternative output network, which is
+described in the Opamp > chapter in Section 30.3.1.2 (p. 735) . To enable
+this network, OUTMODE must be configured to ADC > in DACn_CTRL. The actual
+output network can be configred by configuring DACn_OPAxMUX registers.
 
-It is possible to the output signal go to only to the main output, only to the ALT output or both.
+It is possible to the output signal go to only to the main output,
+only to the ALT output or both.
 
 To use only the main output, set DAC0_OPA0MUX.OUTMODE to MAIN.
 
 To use only the ALT output, set DAC0_OPA0MUX.OUTMODE to ALT.
 
-To use output signal at both the main and the ALT outputs, set DAC0_OPA0MUX.OUTMODE
-to ALL.
+To use output signal at both the main and the ALT outputs, set
+DAC0_OPA0MUX.OUTMODE to ALL.
 
-It is also possible to route the output signal to Analog Digital Converter (AD), to an internal OPAMP] or to an Analog Compare Peripheral (ACMP).
+It is also possible to route the output signal to Analog Digital Converter
+(AD), to an internal OPAMP] or to an Analog Compare Peripheral (ACMP).
 
-Is is possible to reoute the output signal to OUTx pins by set the corresponding bit in DACn_OPAxMUX registers. Note that the OUTPUT field must be set to ADC in order to this routing to work.
+Is is possible to reoute the output signal to OUTx pins by set the
+corresponding bit in DACn_OPAxMUX registers. Note that the OUTPUT field
+must be set to ADC in order to this routing to work.
 
 
-The operation can be monitored by observing the STATUS register, specifically, the CH0DV and CH1DV bits,
-that when set, indicates that there is still data to be converted on the DATA registers.
+The operation can be monitored by observing the STATUS register,
+specifically, the CH0DV and CH1DV bits, that when set, indicates that
+there is still data to be converted on the DATA registers.
 
-There is an additional parameter to be configured: the BIASPROG. It specifies the amount of current thru
-the voltage reference. The higher, the better, but with increased power comsumption. From the
-Reference Manual.
+There is an additional parameter to be configured: the BIASPROG. It
+specifies the amount of current thru the voltage reference. The higher,
+the better, but with increased power comsumption. From the Reference
+Manual.
 
->The bias current settings should only be changed while both DAC channels are disabled. The electrical
-> characteristics given in the datasheet require the bias configuration to be set to the default values, > where no other bias values are given.
+>The bias current settings should only be changed while both DAC channels
+are disabled. The electrical > characteristics given in the datasheet
+require the bias configuration to be set to the default values, > where
+no other bias values are given.
 
-The default values can be found in the DEVICE INFO area, specifically, the the DAC0_BIASPROG subarea.
-By the way, the Device Info contains other values of interest. It is possible to
-use a predefined structure DEVINFO to access part of these values.
+The default values can be found in the DEVICE INFO area, specifically,
+the the DAC0_BIASPROG subarea.  By the way, the Device Info contains
+other values of interest. It is possible to use a predefined structure
+DEVINFO to access part of these values.
 
 
 |  Address   | Symbol        |  Field    | Contents               |
@@ -107,16 +122,20 @@ use a predefined structure DEVINFO to access part of these values.
 | 0x0FE081CC | DAC0_CAL_2V5  | DAC0CAL1  | [22:16]: Gain for 2V5 reference, <br/>[13:8]: Channel 1 offset for 2V5 reference, <br/>[5:0]: Channel 0 offset for 2V5 reference.  |
 | 0x0FE081D0 | DAC0_CAL_VDD  | DAC0CAL2  | [22:16]: Reserved (gain for this reference cannot be calibrated), <br/>[13:8]: Channel 1 offset for VDD reference, <br/>[5:0]: Channel 0 offset for VDD reference. |
 
-The values not accessed through the provided DEVINFO structure should be accessed using
-symbols defined by the user/programmer.
+The values not accessed through the provided DEVINFO structure should
+be accessed using symbols defined by the user/programmer.
 
      #define  DEVINFO_DAC0_CAL       (*((uint32_t *) 0x0FE08050UL) )
      #define  DEVINFO_DAC0_BIASPROG  (*((uint32_t *) 0x0FE08058UL) )
 
+Note that the DEVINFO struct in **efm32gg990f1024.h** file does not align with the addresses in the
+reference manual.
+
 
 ## The DA Converter on the EFM32-STK3700
 
-The STK3700 Board has the following signals available on the EXT expansion header.
+The STK3700 Board has the following signals available on the EXT
+expansion header.
 
 
 | Signal      | MCU pin   | EXT pin   | Shared with                  |
@@ -125,9 +144,10 @@ The STK3700 Board has the following signals available on the EXT expansion heade
 | DAC0_CH1    |  PB12     |  13       |  OPAMP_OUT1                  |
 
 
-> The DA pins are also used by other peripherals. Observe that the notation EXPn,
-> where n* is the header pin number, is used instead of EXP_HEADERm used in
-> the schematics.
+> The DA pins are also used by other peripherals. Observe that the
+notation EXPn, > where n* is the header pin number, is used instead of
+EXP_HEADERm used in > the schematics.
+
 
 
 
@@ -157,3 +177,10 @@ The STK3700 Board has the following signals available on the EXT expansion heade
 |         |           |         | ACMP0_O, ETM_TD0                            |
 
 > * PD6 is also used to excite the photo-transistor
+
+
+## References
+
+1 [ENF32GG Reference Manual]
+2 [EFM32GG990 Datasheet]
+3 [Application Note]

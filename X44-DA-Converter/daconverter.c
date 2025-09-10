@@ -8,24 +8,28 @@
 #include <stdint.h>
 #include "em_device.h"
 #include "clock_efm32gg_ext.h"
+#include "devinfo.h"
 #include "daconverter.h"
 
 /**
  * Configuration parameters
  */
-#define MODE            (0)
-#define BIASPROG        (7)
-#define MAXSAMPLERATE   (500000UL)
-
-/**
- * @brief   Pointer to GPIO registers
- */
-//static GPIO_P_TypeDef * const GPIOE = &(GPIO->P[4]);  // GPIOE
+#define DAC_MODE            (0)
+#define DAC_BIASPROG        (7)
+#define DAC_MAXSAMPLERATE   (500000UL)
 
 /**
  *  @brief  Pointer to call backfunction
  */
 static void (*DAC_Callback)(int ch) = 0;
+
+
+/**
+ *  @brief  Pointer to call backfunction
+ *
+ *  @note   bit vector. Bit mask os (1<<channel_nr)
+ */
+static uint32_t enabled_chs = 0;
 
 /**
  *  @brief IRQ Handler for DAC0
@@ -33,8 +37,8 @@ static void (*DAC_Callback)(int ch) = 0;
 void DAC0_IRQHandler(void) {
 
     int ch = 0;
-    if( DAC0->IF&DAC_IF_CH0) ch |= 1;
-    if( DAC0->IF&DAC_IF_CH0) ch |= 2;
+    if( DAC0->IF&DAC_IF_CH0) ch |= DAC_CH0;
+    if( DAC0->IF&DAC_IF_CH0) ch |= DAC_CH1;
 
     if( DAC_Callback ) DAC_Callback(ch);
     // Clear interrupt.
@@ -55,6 +59,8 @@ int DAC_DisableChannels(unsigned bm) {
     if( (bm&DAC_CH1)!=0 ) {
         DAC0->CH0CTRL &= ~DAC_CH1CTRL_EN;
     }
+    enabled_chs = 0;
+
     return 0;
 }
 
@@ -68,9 +74,11 @@ int DAC_EnableChannels(unsigned bm) {
 
     if( (bm&DAC_CH0)!=0 ) {
         DAC0->CH0CTRL |= DAC_CH0CTRL_EN;
+        enabled_chs = DAC_CH0;
     }
     if( (bm&DAC_CH0)!=0 ) {
         DAC0->CH0CTRL |= DAC_CH0CTRL_EN;
+        enabled_chs = DAC_CH1;
     }
     return 0;
 }
@@ -84,104 +92,102 @@ int DAC_EnableChannels(unsigned bm) {
  *  @returns    0=OK, other value in case of error
  *
  */
-int DAC_Init(unsigned config, unsigned samplerate, int ch0config, int ch1config) {
+int DAC_Init(unsigned config, unsigned samplerate ) {
 unsigned daclkfreq;
+uint32_t chs = 0;
 
+    // At least, one channel must be enabled
+    if( !(config&(DAC_CONFIG_ENABLE_CH0|DAC_CONFIG_ENABLE_CH1)) ) {
+        return -1;
+    }
+
+    if( samplerate > DAC_MAXSAMPLERATE ) {
+        samplerate = DAC_MAXSAMPLERATE;
+    }
     /* Enable Clock for GPIO */
     CMU->HFPERCLKDIV |= CMU_HFPERCLKDIV_HFPERCLKEN;     // Enable HFPERCLK
     CMU->HFPERCLKEN0 |= CMU_HFPERCLKEN0_DAC0;           // Enable HFPERCKL for DAC
+    CMU->HFPERCLKEN0 |= CMU_HFPERCLKEN0_GPIO;           // Enable HFPERCLK for GPIO
 
     // Just in case, disable channels
-    DAC_DisableChannels(DAC_CH0|DAC_CH1);
+    DAC0->CH0CTRL &= ~(DAC_CH0CTRL_EN);
+    DAC0->CH1CTRL &= ~(DAC_CH1CTRL_EN);
+    enabled_chs = 0;
 
-    // configure clock prescaler. It modifies the CTRL register
-    int rc = DAC_ConfigureClock(samplerate);
-    if( rc < 0 )
-        return -2;
+    // Restore default for Control register
+    DAC0->CTRL = _DAC_CTRL_RESETVALUE;
 
-
-    unsigned chs = 0;
-    if( ch0config == DAC_CHN_NOTUSED )
+    // Verify which channels will be used
+    if ( (config&DAC_CONFIG_ENABLE_CH0) != 0 )
         chs |= DAC_CH0;
-    if( ch1config == DAC_CHN_NOTUSED )
+    if ( (config&DAC_CONFIG_ENABLE_CH1) != 0 )
         chs |= DAC_CH1;
 
     // Differential output needs both channels
-    if( config&DAC_DIFFERENTIAL_OUTPUT ) {
-        if( chs != (DAC_CH0|DAC_CH1) )
-            return -3;
+    if( config&DAC_CONFIG_DIFFERENTIAL_OUTPUT ) {
+        // Both channels must be used
+        if( chs != (DAC_CH0|DAC_CH1) ) {
+            return -2;
+        }
     }
+
+
+    // Configure clock prescaler. It modifies the CTRL register
+    int rc = DAC_ConfigureClock(samplerate);
+    if( rc < 0 )
+        return -3;
 
     uint32_t dacctrl = _DAC_CTRL_RESETVALUE;
-    uint32_t calctrl = _DAC_CAL_RESETVALUE;
+    uint32_t cal     =  DI_GetValue32(DI_DAC0_CAL);      // or_DAC_CAL_RESETVALUE;
+    uint32_t biasprog=  DI_GetValue32(DI_DAC0_BIASPROG); // or _DAC_BIASPROG_RESETVALUE;
 
-    if( config&DAC_VREF_VDD ) {
-        dacctrl = (dacctrl&~(_DAC_CTRL_REFSEL_MASK))
-                    | (_DAC_CTRL_REFSEL_VDD);
-    } else if( config&DAC_VREF_2V5 ) {
-        dacctrl = (dacctrl&~(_DAC_CTRL_REFSEL_MASK))
-                    | (_DAC_CTRL_REFSEL_2V5);
-    } else if( config&DAC_VREF_1V25 ) {
-        dacctrl = (dacctrl&~(_DAC_CTRL_REFSEL_MASK))
-                    | (_DAC_CTRL_REFSEL_1V25);
-    }
     dacctrl &= ~(  _DAC_CTRL_CONVMODE_MASK
                   |_DAC_CTRL_DIFF_MASK
-                  |_DAC_CTRL_OUTMODE_MASK);
+                  |_DAC_CTRL_OUTMODE_MASK
+                  |_DAC_CTRL_REFSEL_MASK);
 
-    if( config&DAC_SINGLE_ENDED_OUTPUT )
-        dacctrl &= ~(DAC_CTRL_DIFF);
-    if( config&DAC_DIFFERENTIAL_OUTPUT )
+    // Not sure about the correctness of the DI struct in emf32gg990f1024.h
+
+    if( config&DAC_CONFIG_VREF_VDD ) {
+        dacctrl |= _DAC_CTRL_REFSEL_VDD;
+        cal      =  DI_GetValue32(DI_DAC0_CAL_VDD);  // DEVINFO->DAC0CAL2;
+    } else if( config&DAC_CONFIG_VREF_2V5 ) {
+        dacctrl |= _DAC_CTRL_REFSEL_2V5;
+        cal      =  DI_GetValue32(DI_DAC0_CAL_2V5);  // DEVINFO->DAC0CAL1;
+    } else if( config&DAC_CONFIG_VREF_1V25 ) {
+        dacctrl |= _DAC_CTRL_REFSEL_1V25;
+        cal      =  DI_GetValue32(DI_DAC0_CAL_1V25); // DEVINFO->DAC0CAL0;
+    } else {
+        return -4;
+    }
+
+    if( config&DAC_CONFIG_DIFFERENTIAL_OUTPUT ) {
         dacctrl |= DAC_CTRL_DIFF;
+    }
 
     // Set conversion mode to continuous
     dacctrl |= DAC_CTRL_CONVMODE_CONTINUOUS;
 
-    // Set output mode
+    // Set output mode. For now, only output in the standard pin
     dacctrl |= DAC_CTRL_OUTMODE_PIN;
 
-    // Adjust calibration
-    if( (config&DAC_VREF_VDD) != 0 ) {
-        DAC0->CAL = DEVINFO->DAC0CAL2;
-    } else if( (config&DAC_VREF_2V5) != 0 ) {
-        DAC0->CAL = DEVINFO->DAC0CAL1;
-    } else if( (config&DAC_VREF_1V25) != 0 ) {
-        DAC0->CAL = DEVINFO->DAC0CAL0;
-    }
 
-    // set control register
+    // set control and calibration registers
     DAC0->CTRL = dacctrl;
+    DAC0->CAL  = cal;
+    DAC0->BIASPROG = biasprog;
 
-    // Configure channels
-/*    if( ch0config != DAC_CHN_NOTUSED ) {*/
-/*        DAC0->CH0CTRL |= DAC_CH0CTRL_EN;*/
-/*        if( (ch0config&DAC_CHN_USEALT) != 0 )*/
-/*            DAC0->OPA0MUX = (DAC0->OPA0MUX&~(_DAC_OPA0MUX_OUTMODE_MASK))*/
-/*                            |DAC_OPA0MUX_OUTMODE_ALL;*/
-/*        else*/
-/*            DAC0->OPA0MUX = (DAC0->OPA0MUX&~(_DAC_OPA0MUX_OUTMODE_MASK))*/
-/*                            |DAC_OPA0MUX_OUTMODE_MAIN;*/
-/*    }*/
-/*    if( ch1config != DAC_CHN_NOTUSED ) {*/
-/*        DAC0->CH1CTRL |= DAC_CH1CTRL_EN;*/
-/*        if( (ch1config&DAC_CHN_USEALT) != 0 )*/
-/*            DAC0->OPA1MUX = (DAC0->OPA1MUX&~(_DAC_OPA1MUX_OUTMODE_MASK))*/
-/*                            |DAC_OPA1MUX_OUTMODE_ALL;*/
-/*        else*/
-/*            DAC0->OPA1MUX = (DAC0->OPA1MUX&~(_DAC_OPA1MUX_OUTMODE_MASK))*/
-/*                            |DAC_OPA1MUX_OUTMODE_MAIN;*/
-/*    }*/
-
+    // Enable channels
     DAC_EnableChannels(chs);
+
     return 0;
 }
 
 
 /**
- *  @brief      DAC_ReconfigureClock
+ *  @brief      DAC_Status
  *
- *  @note       The CHxDV bit is 1 when data is written and 0
- *              when it is converted.
+ *  @note       Get status of DA converter.
  *
  *  @note       The meaning of the returned value are 0 when busy
  *              and 1 when ready, ie, data can be written.
@@ -189,8 +195,15 @@ unsigned daclkfreq;
 unsigned DAC_Status(void) {
 uint32_t w = DAC0->STATUS;
 
-    return w^(DAC_STATUS_CH0DV|DAC_STATUS_CH1DV);
+    uint32_t chs = 0;
+    if( (w&DAC_STATUS_CH0DV) == 0 ) {
+        chs |= DAC_CH0;
+    }
+    if( (w&DAC_STATUS_CH1DV) == 0 ) {
+        chs |= DAC_CH1;
+    }
 
+    return chs;
 }
 
 
@@ -206,7 +219,7 @@ uint32_t w = DAC0->STATUS;
  */
 int DAC_ConfigureClock(unsigned samplerate) {
 
-   if( samplerate > MAXSAMPLERATE )
+   if( samplerate > DAC_MAXSAMPLERATE )
         return -1;
 
     uint32_t daclkfreq = 2*samplerate;
@@ -372,7 +385,7 @@ int DAC_DisableChannel(int ch) {
 
     if( ch == 0 ) DAC0->CH0CTRL &= ~(DAC_CH0CTRL_EN);
     if( ch == 1 ) DAC0->CH1CTRL &= ~(DAC_CH1CTRL_EN);
-
+    enabled_chs = 0;
     return 0;
 }
 
@@ -387,8 +400,14 @@ int DAC_DisableChannel(int ch) {
  */
 int DAC_EnableChannel(int ch) {
 
-    if( ch == 0 ) DAC0->CH0CTRL |= DAC_CH0CTRL_EN;
-    if( ch == 1 ) DAC0->CH1CTRL |= DAC_CH1CTRL_EN;
+    if( ch == 0 ) {
+        DAC0->CH0CTRL |= DAC_CH0CTRL_EN;
+        enabled_chs |= DAC_CH0;
+    }
+    if( ch == 1 ) {
+        DAC0->CH1CTRL |= DAC_CH1CTRL_EN;
+        enabled_chs |= DAC_CH1;
+    }
 
     return 0;
 }
