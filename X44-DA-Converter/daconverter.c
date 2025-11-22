@@ -16,7 +16,7 @@
  */
 #define DAC_MODE            (0)
 #define DAC_BIASPROG        (7)
-#define DAC_MAXSAMPLERATE   (500000UL)
+
 
 /**
  *  @brief  Pointer to call backfunction

@@ -6,6 +6,7 @@
 
 #include <stdint.h>
 #include <stdio.h>
+#include <string.h>
 /*
  * Including this file, it is possible to define which processor using command line
  * E.g. -DEFM32GG995F1024
@@ -14,7 +15,7 @@
  */
 #include "em_device.h"
 #include "clock_efm32gg_ext.h"
-
+#include "dma.h"
 #include "led.h"
 
 
@@ -51,6 +52,41 @@ uint64_t l = tick+delay;
 }
 
 
+
+
+static void fill_increasing(uint8_t *a, uint8_t c, size_t size) {
+uint8_t *lim = a+size;
+
+    while( a < lim )  *a++ = c++;
+
+}
+
+static int test_increasing(uint8_t *a, uint8_t c, size_t size) {
+uint8_t *lim = a+size;
+
+    while( (a < lim) && (*a==c) ) {
+        a++;
+        c++;
+    }
+
+    return a == lim;
+}
+
+static int fill_constant(uint8_t *a, uint8_t c, size_t size) {
+uint8_t *lim = a+size;
+
+    while( a < lim )  *a++ = c;
+
+}
+
+static int test_constant(uint8_t *a, uint8_t c, size_t size) {
+uint8_t *lim = a+size;
+
+    while( (a < lim) && (*a==c) ) a++;
+
+    return a == lim;
+}
+
 /**************************************************************************//**
  * @brief  Main function
  *
@@ -58,12 +94,14 @@ uint64_t l = tick+delay;
  *         HFCLK = HFXO
  *         HFCORECLK = HFCLK
  *         HFPERCLK  = HFCLK
- */
+ ****************************************************************************/
 
 int main(void) {
 char line[100];
 int tryn = 0;
-
+#define AREASIZE (100)
+char area1[AREASIZE+2];
+char area2[AREASIZE+2];
     /* Configure LEDs */
     LED_Init(LED1|LED2);
 
@@ -76,12 +114,27 @@ int tryn = 0;
     /* Configure SysTick */
     SysTick_Config(SystemCoreClock/TickDivisor);
 
+    DMA_Init();
+
     __enable_irq();
 
-    printf("Hello\n");
-    while (1) {
-        putchar('+');
-        Delay(100);
-    }
+    // TODO: Fazer test incrementing the values in the source
+    int     ch = 4;
+    uint8_t c  = 1;
+    do {
+        printf("Trying an area full of %d....\n",c);
+        fill_constant(area1,c,AREASIZE+2);       // Initialize source area
+        memset(area2,0,AREASIZE+2);       // Clear destination area
+        DMA_SetupTransferMemToMem_8(ch,area1+1,area2+1,AREASIZE);
+        DMA_StartTransfer(ch);
+        while ( DMA_GetTransferStatus(ch) ) {}
+        int rc = test_constant(area2+1,c,AREASIZE);
+        if( (rc == 1) && (area2[0]==0) && (area2[AREASIZE-1]==0) ) {
+            printf("    Transfer OK\n");
+        } else {
+            printf("    Transfer Error\n");
+        }
+        c++;
+    } while (c < 2);
 
 }

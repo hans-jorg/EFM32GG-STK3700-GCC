@@ -388,8 +388,7 @@ KDBGFLAGS=
 #
 # GUI Editor
 #
-#GUIEDITOR=gedit --new-window
-GUIEDITOR=zed
+GUIEDITOR=gedit --new-window
 #GUIEDITOR=geany
 
 #
