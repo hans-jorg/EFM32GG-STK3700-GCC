@@ -125,7 +125,7 @@ int tryn = 0;
     printf("\n\rUsando printf\n\r");
     
     
-#define TEST 3
+#define TEST 30
 
 #if TEST == 1
     char s[] = { [0 ... 197]='*','\n','\r' }; // Only gcc!!!
@@ -189,7 +189,7 @@ int tryn = 0;
     while (1) {
         printf("Try %d\n",tryn++);
         printf("\nYour name: ");
-        //fgets(line,99,stdin);
+        fgets(line,99,stdin);
         printf("Hello %s\n",line);
 
         Delay(100);
