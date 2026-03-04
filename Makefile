@@ -2,9 +2,9 @@
 # @brief Master Makefile
 #
 
-#.SILENT=
+.SILENT=
 SUBPROJECTS=$(shell ls -d [0-9][0-9]-* X[0-9][0-9]-* )
-MAKE_FLAGS=
+MAKE_FLAGS=--no-print-directory
 
 
 # Build all
