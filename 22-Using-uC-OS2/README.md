@@ -1,7 +1,23 @@
 19  Using uC/OS-II
 ==================
 
-uC/OS-II was a proprietary[24] real time preemptive kernel with a small footprint. It was developend by Micrium but it could be downloaded from the micrium web site. It was free for non commercial purposes. If it is used in a commercial product, there were license fees. But Micrium was bought by Silicon Labs and sometime after it, the software was made available in GitHub. A company called Weston Embedded assumed the development of the the micrium software including the uc/OS-II.
+uC/OS-II was a proprietary[24] real time preemptive kernel with a small footprint. It was developend by Micrium but it could be downloaded from the Micrium web site since it was free for non commercial uses. If it is used in a commercial product, there were license fees. But Micrium was bought by Silicon Labs and sometime after it, the software was made available in GitHub. A company called Weston Embedded assumed the development of the the micrium software including the uc/OS-II.
+
+
+> The following lines must be added after the * .global  OS_CPU_PendSVHandler* line
+> in the Ports/ARM-Cortex-M/ARMv7-M/GNU/os_cpu_a.S file.
+> @
+> @    Demanded by new versions of binutils
+> @
+>    .type    OSStartHighRdy, %function
+>    .type    OS_CPU_SR_Save, %function
+>    .type    OS_CPU_SR_Restore, %function
+>    .type    OSCtxSw, %function
+>    .type    OSIntCtxSw, %function
+>    .type    OS_CPU_PendSVHandler, %function
+>
+>
+>
 
 The main features of uC/OS-II are:
 
@@ -61,15 +77,15 @@ of functionalities can be enabled or disabled.
 For application specific configuration, there is the *app_cfg.h* file. The main parameters are shown below.
 
     #define  APP_CFG_STARTUP_TASK_PRIO          3u
-    
+
     #define  OS_TASK_TMR_PRIO                  (OS_LOWEST_PRIO - 2u)
-    
-    
+
+
     #define  TASK0_PRIO       (10)
     #define  TASK1_PRIO       (11)
-    
+
     #define  APP_CFG_STARTUP_TASK_STK_SIZE    128u
-    
+
     #define TASK0_STACKSIZE                     100
     #define TASK1_STACKSIZE                     100
 
