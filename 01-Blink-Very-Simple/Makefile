@@ -33,8 +33,8 @@
 #  @param touch        forces compilation of all modules by next build
 #
 #
-#  @note        There is support for JLink and OpenOCD. The OpenOCD is not fully tested.
-#               The OpenOCD is not fully tested
+#  @note        There is support for JLink and OpenOCD. The OpenOCD is not fully
+#               tested.
 #
 
 
@@ -52,7 +52,7 @@ PROGNAME=blink1
 # Verbose output for Make (Coment to have verbose output}
 #
 #MAKEFLAGS+= --silent --no-print-directory
-.SILENT:
+#.SILENT:
 
 #
 # Compatibility Windows/Linux
@@ -799,7 +799,7 @@ endif
 # Ozone does not use GDBPROXY!!!
 ozone: ${OBJDIR}/${PROGNAME}.bin
 	echo "Ozone does not use GDB Proxy"
-	${OZONE} ozone  -usb -if swd -device ${PART} -programfile ${OBJDIR}/${PROGNAME}.axf 
+	${OZONE} ozone  -usb -if swd -device ${PART} -programfile ${OBJDIR}/${PROGNAME}.axf
 
 #
 # Start GDB proxy

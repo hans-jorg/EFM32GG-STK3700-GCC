@@ -84,7 +84,7 @@ GPIO_P_TypeDef * const GPIOE = &(GPIO->P[4]);           // GPIOE
     /* Blink loop */
     while (1) {
     // This is a trick to comment out a piece of code.
-#if 0
+#if 1
         // Alternating LEDs: -- *- ** *-
         GPIOE->DOUT ^= LED1;
         Delay(DELAYVAL);
@@ -94,7 +94,7 @@ GPIO_P_TypeDef * const GPIOE = &(GPIO->P[4]);           // GPIOE
 #else
         // Blinking both LEDs at the same time: -- **
         GPIOE->DOUT |= LED1;
-        Delay(2*DELAYVAL);
+        Delay(8*DELAYVAL);
 
         GPIOE->DOUT &= ~(LED1);
         Delay(DELAYVAL);

@@ -12,7 +12,7 @@ The architecture of the software is shown below.
     +------------------------------------------------------+
     |                      Hardware                        |
     +------------------------------------------------------+
-    
+
 
 To access the registers, it is necessary to know their addresses and fields. These information can be found in the data sheet and other documents from the manufacturer. The manufacturer (Silicon Labs) provides a CMSIS compatible header files in the *platform* folder of the Gecko SDK Library.
 
@@ -31,7 +31,7 @@ Instead of using symbols like *0x2* to access the bit to control the *LED1*, it 
     #define LED1 0x2
 
 To define it, a common idiom is to use a BIT macro defined as below (the parenthesis are recommended to avoid surprises).
-   
+
     #define BIT(N) (1<<(N))
 
 The symbols to access the LEDs in the GPIO Port E registers can then be defined as
@@ -51,7 +51,7 @@ To enable clock for peripherals, the *HFPERCLKEN* bit in the *HFPERCLKDIV* regis
     /* Enable Clock for GPIO */
     CMU->HFPERCLKDIV |= CMU_HFPERCLKDIV_HFPERCLKEN; // Enable HFPERCLK
     CMU->HFPERCLKEN0 |= CMU_HFPERCLKEN0_GPIO; // Enable HFPERCKL for GPIO
-    
+
 To easy access to the register for GPIO Port E, a constant is defined, that points to the memory region containing the GPIO E registers.
 
     GPIO_P_TypeDef * const GPIOE = &(GPIO->P[4]); // GPIOE
@@ -67,7 +67,7 @@ This can be done in one step, with a longer command.
     GPIOE->MODEL = (GPIOE->MODEL&~(_GPIO_P_MODEL_MODE2_MASK|_GPIO_P_MODEL_MODE3_MASK))
     				|(GPIO_P_MODEL_MODE2_PUSHPULL|GPIO_P_MODEL_MODE3_PUSHPULL);
 
-In the code, this is under conditional compiling pattern. #if 1..#else...#endif. Changing 1 to 0, 
+In the code, this is under conditional compiling pattern. #if 1..#else...#endif. Changing 1 to 0,
 the code under the else is compiled.
 
 Finally, to set the desired value, one can or a value with a bit 1 in the desired position and all other bits set to 0.
