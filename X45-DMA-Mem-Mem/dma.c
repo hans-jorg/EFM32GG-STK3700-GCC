@@ -3,38 +3,44 @@
  *
  * @brief   Controls the DMA device (ARM )PL230 uDMA)
  *
- * @brief   A uniform channel number is used. Primary channels are numbered 0 to 15 and
- *          alternate channels 16 to 31. Both are limited by the actual number of channels
- *          available. A smaller number of channels can be configured reducing the demand of RAM
+ * @note    A uniform channel number is used. Primary channels are numbered 0 
+ *          to 15 and alternate channels 16 to 31. Both are limited by the 
+ *          actual number of channels available.
+ *
+ * @note    The EFM32GG uses a PL230 uDMA controller, developed and licensed 
+ *          by ARM. It support 12 primary channels and 12 alternate channels.
+ *
+ *          A smaller number of channels can be configured reducing the demand 
+ *          of RAM by setting the following compilation symbols
  *          DMA_NUMPRIMARYCHANNELS:   Must be at most 12 for the EFM32GG
- *          DMA_NUMALTERNATECHANNELS: Can be set to zero if no alternate channels are used.
+ *          DMA_NUMALTERNATECHANNELS: Can be set to zero if no alternate 
+ *                                    channels are used.
  *                                    Otherwise limited to 12 for the EFM32GG
  *
  * @note    DMA source (SOURCESEL)
  *
- * |   Value    | Mode      | Description                                                         |
- * |------------|---------- |                                                                     |
- * |  0b000000  |  NONE     | No source selected                                                  |
- * |  0b001000  |  ADC0     | Analog to Digital Converter 0                                       |
- * |  0b001010  |  DAC0     | Digital to Analog Converter 0                                       |
- * |  0b001100  |  USART0   | Universal Synchronous/Asynchronous Receiver/Transmitter 0--         |
- * |  0b001101  |  USART1   | Universal Synchronous/Asynchronous Receiver/Transmitter 1--         |
- * |  0b001110  |  USART2   | Universal Synchronous/Asynchronous Receiver/Transmitter 2--         |
- * |  0b010000  |  LEUART0  | Low Energy UART 0                                                   |
- * |  0b010001  |  LEUART1  | Low Energy UART 1                                                   |
- * |  0b010100  |  I2C0     | I2C 0                                                               |
- * |  0b010101  |  I2C1     | I2C 1                                                               |
- * |  0b011000  |  TIMER0   | Timer 0                                                             |
- * |  0b011001  |  TIMER1   | Timer 1                                                             |
- * |  0b011010  |  TIMER2   | Timer 2                                                             |
- * |  0b011011  |  TIMER3   | Timer 3                                                             |
- * |  0b101100  |  UART0    | Universal Asynchronous Receiver/Transmitter 0                       |
- * |  0b101101  |  UART1    | Universal Asynchronous Receiver/Transmitter 1                       |
- * |  0b110000  |  MSC      | Memory System Controller                                            |
- * |  0b110001  |  AES      | Advanced Encryption Standard Accelerator                            |
- * |  0b110010  |  LESENSE  | Low Energy Sensor Interface                                         |
- * |  0b110011  |  EBI      | External Bus Interface                                              |
- *
+ * |   Value    | Mode      | Description                                    |
+ * |------------|---------- |------------------------------------------------|
+ * |  0b000000  |  NONE     | No source selected                             |
+ * |  0b001000  |  ADC0     | Analog to Digital Converter                    |
+ * |  0b001010  |  DAC0     | Digital to Analog Converter                    |
+ * |  0b001100  |  USART0   | USART 0--                                      |
+ * |  0b001101  |  USART1   | USART 1--                                      |
+ * |  0b001110  |  USART2   | USART 2--                                      |
+ * |  0b010000  |  LEUART0  | Low Energy UART                                |
+ * |  0b010001  |  LEUART1  | Low Energy UART                                |
+ * |  0b010100  |  I2C0     | I2C                                            |
+ * |  0b010101  |  I2C1     | I2C                                            |
+ * |  0b011000  |  TIMER0   | Timer                                          |
+ * |  0b011001  |  TIMER1   | Timer 1                                        |
+ * |  0b011010  |  TIMER2   | Timer                                          |
+ * |  0b011011  |  TIMER3   | Timer                                          |
+ * |  0b101100  |  UART0    | UART 0                                         |
+ * |  0b101101  |  UART1    | UART 1                                         |
+ * |  0b110000  |  MSC      | Memory System                                  |
+ * |  0b110001  |  AES      | Advanced Encryption Standard Accelerator       |
+ * |  0b110010  |  LESENSE  | Low Energy Sensor Interface                    |
+ * |  0b110011  |  EBI      | External Bus Interface                         |
  *
  * @note  Signal Selection (SIGSEL)
  *
@@ -104,11 +110,11 @@
  *
  *
  *
- * @author  <author>
+ * @author  Hans
  *
- * @version <version>
+ * @version 1.0
  *
- * @date    XX/XX/2020
+ * @date    16/04/2026
  */
 
 #include "em_device.h"
@@ -122,129 +128,93 @@
  *  @note    The number of alternate channels can be set to 0 to reduce demand of RAM
  *  @note    At most, 12 as defined by DMA_CHAN_COUNT for the EFM32GG
  */
+#ifndef DMA_NUMPRIMARYCHANNELS
 #define DMA_NUMPRIMARYCHANNELS                 (12)
-#define DMA_NUMALTERNATECHANNELS               (12)
+#endif
 
+#ifndef DMA_NUMALTERNATECHANNELS
+#define DMA_NUMALTERNATECHANNELS               (0)
+#endif
 
-#define CHMASK                                 ((1<<DMA_CHAN_COUNT)-1)
 /**
- *  @brief  Source Selection Encoding
+ *  @brief  DMA Interrupt Priority
  */
-///@{
-#define DMA_SRC_NONE                           _DMA_CH_CTRL_SOURCESEL_NONE
-#define DMA_SRC_ADC0                           _DMA_CH_CTRL_SOURCESEL_ADC0
-#define DMA_SRC_DAC0                           _DMA_CH_CTRL_SOURCESEL_DAC0
-#define DMA_SRC_USART0                         _DMA_CH_CTRL_SOURCESEL_USART0
-#define DMA_SRC_USART1                         _DMA_CH_CTRL_SOURCESEL_USART1
-#define DMA_SRC_USART2                         _DMA_CH_CTRL_SOURCESEL_USART2
-#define DMA_SRC_LEUART0                        _DMA_CH_CTRL_SOURCESEL_LEUART0
-#define DMA_SRC_LEUART1                        _DMA_CH_CTRL_SOURCESEL_LEUART1
-#define DMA_SRC_I2C0                           _DMA_CH_CTRL_SOURCESEL_I2C0
-#define DMA_SRC_I2C1                           _DMA_CH_CTRL_SOURCESEL_I2C1
-#define DMA_SRC_TIMER0                         _DMA_CH_CTRL_SOURCESEL_TIMER0
-#define DMA_SRC_TIMER1                         _DMA_CH_CTRL_SOURCESEL_TIMER1
-#define DMA_SRC_TIMER2                         _DMA_CH_CTRL_SOURCESEL_TIMER2
-#define DMA_SRC_TIMER3                         _DMA_CH_CTRL_SOURCESEL_TIMER3
-#define DMA_SRC_UART0                          _DMA_CH_CTRL_SOURCESEL_UART0
-#define DMA_SRC_UART1                          _DMA_CH_CTRL_SOURCESEL_UART1
-#define DMA_SRC_MSC                            _DMA_CH_CTRL_SOURCESEL_MSC
-#define DMA_SRC_AES                            _DMA_CH_CTRL_SOURCESEL_AES
-#define DMA_SRC_LESENSE                        _DMA_CH_CTRL_SOURCESEL_LESENSE
-#define DMA_SRC_EBI                            _DMA_CH_CTRL_SOURCESEL_EBI
-///@}
-
+#define DMA_PRIO            (4)
 
 
 /**
- *  @brief  Source Selection Encoding
- */
-///@{
-#define  DMA_SIG_SRC_OFF                       (0U)
-#define  DMA_SIG_SRC_ADC0SINGLE                _DMA_CH_CTRL_SIGSEL_ADC0SINGLE
-#define  DMA_SIG_SRC_ADC0SCAN                  _DMA_CH_CTRL_SIGSEL_ADC0SCAN
-
-#define  DMA_SIG_SRC_DAC0CH0                   _DMA_CH_CTRL_SIGSEL_DAC0CH0
-#define  DMA_SIG_SRC_DAC0CH1                   _DMA_CH_CTRL_SIGSEL_DAC0CH1
-
-#define  DMA_SIG_SRC_USART0RXDATAV             _DMA_CH_CTRL_SIGSEL_USART0RXDATAV
-#define  DMA_SIG_SRC_USART0TXBL                _DMA_CH_CTRL_SIGSEL_USART0TXBL
-#define  DMA_SIG_SRC_USART0TXEMPTY             _DMA_CH_CTRL_SIGSEL_USART0TXEMPTY
-
-#define  DMA_SIG_SRC_USART1RXDATAV             _DMA_CH_CTRL_SIGSEL_USART1RXDATAV
-#define  DMA_SIG_SRC_USART1TXBL                _DMA_CH_CTRL_SIGSEL_USART1TXBL
-#define  DMA_SIG_SRC_USART1TXEMPTY             _DMA_CH_CTRL_SIGSEL_USART1TXEMPTY
-#define  DMA_SIG_SRC_USART1RXDATAVRIGHT        _DMA_CH_CTRL_SIGSEL_USART1RXDATAVRIGHT
-#define  DMA_SIG_SRC_USART1TXBLRIGHT           _DMA_CH_CTRL_SIGSEL_USART1TXBLRIGHT
-
-#define  DMA_SIG_SRC_USART2RXDATAV             _DMA_CH_CTRL_SIGSEL_USART2RXDATAV
-#define  DMA_SIG_SRC_USART2TXBL                _DMA_CH_CTRL_SIGSEL_USART2TXBL
-#define  DMA_SIG_SRC_USART2TXEMPTY             _DMA_CH_CTRL_SIGSEL_USART2TXEMPTY
-#define  DMA_SIG_SRC_USART2RXDATAVRIGHT        _DMA_CH_CTRL_SIGSEL_USART2RXDATAVRIGHT
-#define  DMA_SIG_SRC_USART2TXBLRIGHT           _DMA_CH_CTRL_SIGSEL_USART2TXBLRIGHT
-
-#define  DMA_SIG_SRC_LEUART0RXDATAV            _DMA_CH_CTRL_SIGSEL_LEUART0RXDATAV
-#define  DMA_SIG_SRC_LEUART0TXBL               _DMA_CH_CTRL_SIGSEL_LEUART0TXBL
-#define  DMA_SIG_SRC_LEUART0TXEMPTY            _DMA_CH_CTRL_SIGSEL_LEUART0TXEMPTY
-
-#define  DMA_SIG_SRC_LEUART1RXDATAV            _DMA_CH_CTRL_SIGSEL_LEUART1RXDATAV
-#define  DMA_SIG_SRC_LEUART1TXBL               _DMA_CH_CTRL_SIGSEL_LEUART1TXBL
-#define  DMA_SIG_SRC_LEUART1TXEMPTY            _DMA_CH_CTRL_SIGSEL_LEUART1TXEMPTY
-
-#define  DMA_SIG_SRC_I2C0RXDATAV               _DMA_CH_CTRL_SIGSEL_I2C0RXDATAV
-#define  DMA_SIG_SRC_I2C0TXBL                  _DMA_CH_CTRL_SIGSEL_I2C0TXBL
-#define  DMA_SIG_SRC_I2C1RXDATAV               _DMA_CH_CTRL_SIGSEL_I2C1RXDATAV
-#define  DMA_SIG_SRC_I2C1TXBL                  _DMA_CH_CTRL_SIGSEL_I2C1TXBL
-
-#define  DMA_SIG_SRC_TIMER0UFOF                _DMA_CH_CTRL_SIGSEL_TIMER0UFOF
-#define  DMA_SIG_SRC_TIMER0CC0                 _DMA_CH_CTRL_SIGSEL_TIMER0CC0
-#define  DMA_SIG_SRC_TIMER0CC1                 _DMA_CH_CTRL_SIGSEL_TIMER0CC1
-#define  DMA_SIG_SRC_TIMER0CC2                 _DMA_CH_CTRL_SIGSEL_TIMER0CC2
-
-#define  DMA_SIG_SRC_TIMER1UFOF                _DMA_CH_CTRL_SIGSEL_TIMER1UFOF
-#define  DMA_SIG_SRC_TIMER1CC0                 _DMA_CH_CTRL_SIGSEL_TIMER1CC0
-#define  DMA_SIG_SRC_TIMER1CC1                 _DMA_CH_CTRL_SIGSEL_TIMER1CC1
-#define  DMA_SIG_SRC_TIMER1CC2                 _DMA_CH_CTRL_SIGSEL_TIMER1CC2
-
-#define  DMA_SIG_SRC_TIMER2UFOF                _DMA_CH_CTRL_SIGSEL_TIMER2UFOF
-#define  DMA_SIG_SRC_TIMER2CC0                 _DMA_CH_CTRL_SIGSEL_TIMER2CC0
-#define  DMA_SIG_SRC_TIMER2CC1                 _DMA_CH_CTRL_SIGSEL_TIMER2CC1
-#define  DMA_SIG_SRC_TIMER2CC2                 _DMA_CH_CTRL_SIGSEL_TIMER2CC2
-
-#define  DMA_SIG_SRC_TIMER3UFOF                _DMA_CH_CTRL_SIGSEL_TIMER3UFOF
-#define  DMA_SIG_SRC_TIMER3CC0                 _DMA_CH_CTRL_SIGSEL_TIMER3CC0
-#define  DMA_SIG_SRC_TIMER3CC1                 _DMA_CH_CTRL_SIGSEL_TIMER3CC1
-#define  DMA_SIG_SRC_TIMER3CC2                 _DMA_CH_CTRL_SIGSEL_TIMER3CC2
-
-#define  DMA_SIG_SRC_UART0RXDATAV              _DMA_CH_CTRL_SIGSEL_UART0RXDATAV
-#define  DMA_SIG_SRC_UART0TXBL                 _DMA_CH_CTRL_SIGSEL_UART0TXBL
-#define  DMA_SIG_SRC_UART0TXEMPTY              _DMA_CH_CTRL_SIGSEL_UART0TXEMPTY
-
-#define  DMA_SIG_SRC_UART1RXDATAV              _DMA_CH_CTRL_SIGSEL_UART1RXDATAV
-#define  DMA_SIG_SRC_UART1TXBL                 _DMA_CH_CTRL_SIGSEL_UART1TXBL
-#define  DMA_SIG_SRC_UART1TXEMPTY              _DMA_CH_CTRL_SIGSEL_UART1TXEMPTY
-
-#define  DMA_SIG_SRC_MSCWDATA                  _DMA_CH_CTRL_SIGSEL_MSCWDATA
-
-#define  DMA_SIG_SRC_AESDATAWR                 _DMA_CH_CTRL_SIGSEL_AESDATAWR
-#define  DMA_SIG_SRC_AESXORDATAWR              _DMA_CH_CTRL_SIGSEL_AESXORDATAWR
-#define  DMA_SIG_SRC_AESDATARD                 _DMA_CH_CTRL_SIGSEL_AESDATARD
-#define  DMA_SIG_SRC_AESKEYWR                  _DMA_CH_CTRL_SIGSEL_AESKEYWR
-
-#define  DMA_SIG_SRC_LESENSEBUFDATAV           _DMA_CH_CTRL_SIGSEL_LESENSEBUFDATAV
-
-#define  DMA_SIG_SRC_EBIPXL0EMPTY              _DMA_CH_CTRL_SIGSEL_EBIPXL0EMPTY
-#define  DMA_SIG_SRC_EBI_EBIPXL1EMPTY          _DMA_CH_CTRL_SIGSEL_EBIPXL1EMPTY
-#define  DMA_SIG_SRC_EBI_EBIPXLFULL            _DMA_CH_CTRL_SIGSEL_EBIPXLFULL
-#define  DMA_SIG_SRC_EBI_EBIDDEMPTY            _DMA_CH_CTRL_SIGSEL_EBIDDEMPTY
-///@}
-
-
-/**
- *  @brief  DMA descriptor
+ *  @brief  This is a bit mask with the bit set for an existing channel 
  *
- *  @note   Layout described in efm32gg_dma_descriptor.h
- *  @note   Field in ctrl described int efm32gg_dmactrl.h
+ *  @note   It uses DMA_CHAN_COUNT defined in the device header file
+ *
+ *  @note   This format is used for registers named CH*, IF*
  */
+#define CHMASK                                 ((1<<DMA_CHAN_COUNT)-1)
+
+/**
+ *  @brief  Managing error signaling
+ *
+ *  @note   See 8.4.2.4 Error signaling in the Reference Manual
+ *
+ *  @note   The program running on the host processor must always keep a 
+ *          record of which channels have recently asserted their dma_done[ ]
+ *          outputs. It must compare the disabled channels list from step 1
+ *          (p. 61) , with the record of the channels that
+ *          have recently set their dma_done[ ] outputs. The channel with no 
+ *          record of dma_done[C] being set is the channel that the ERROR 
+ *          occurred on.
+ *
+ *  @note   These are bit-mapped with channel 0 in the bit 0 (LSB)
+ *
+ *  @note   The bits in *enabled channels* are set in the StartTransfer and
+ *          cleared in the IRQ processing
+ *
+ *  @note   The bits in *done channels* are set in the IRQ processing and 
+ *          cleared in the StartTransfer
+ *
+ *  @note   The bits in *error_channels* are set in the IRQ processing and
+ *          
+ */
+static uint32_t enabled_channels = 0;
+static uint32_t done_channels    = 0;
+static uint32_t error_channels   = 0;
+
+/**
+ * @brief  Pointer to callback routine
+ *
+ */
+
+static void (*DMA_CallbackFunction)(uint32_t errors, uint32_t done) = 0;
+
+/*
+ *  @brief  Clear Channel state variables 
+ */
+static inline void ClearChannelState(uint32_t chmask) {
+
+    enabled_channels &= ~(chmask);
+    error_channels   &= ~(chmask);
+    done_channels    &= ~(chmask);
+}
+
+/*
+ *  @brief  Clear Channel state variables 
+ */
+static inline void ClearChannelStateAll(void) {
+
+    enabled_channels = 0;
+    error_channels   = 0;
+    done_channels    = 0;
+}
+
+/*
+ *  @brief  Set channel state to start DMA 
+ */
+static inline void SetChannelState(uint32_t chmask) {
+
+    enabled_channels |= chmask;
+    error_channels   &= ~(chmask);
+    done_channels    &= ~(chmask);
+}
 
 /**
  * @brief Area for DMA Descriptors
@@ -252,16 +222,18 @@
  * @note  The number of channels is configurable
  *
  * @note  DMA_NUMPRIMARYCHANNELS must be less or equal to DMA_CHAN_COUNT
- *
  * @note  DMA_NUMALTERNATECHANNELS must be less or equal to DMA_CHAN_COUNT
+ *
+ * @note  DMA_DESCRIPTOR_TypeDef is defined in efm32gg_dma_descriptor.h
+ *        
  */
 ///@{
 #if DMA_NUMALTERNATECHANNELS > 0
-static DMA_DESCRIPTOR_TypeDef
-    DMA_DescriptorTable[16+DMA_NUMALTERNATECHANNELS] __attribute__((aligned (256)));
+static __attribute__((aligned (256)))  DMA_DESCRIPTOR_TypeDef
+    DMA_DescriptorTable[16+DMA_NUMALTERNATECHANNELS];
 #else
-static DMA_DESCRIPTOR_TypeDef
-    DMA_DescriptorTable[DMA_NUMPRIMARYCHANNELS]      __attribute__((aligned (256)));
+static __attribute__((aligned (256)))  DMA_DESCRIPTOR_TypeDef
+    DMA_DescriptorTable[DMA_NUMPRIMARYCHANNELS];
 #endif
 
 static inline DMA_DESCRIPTOR_TypeDef *GetPrimaryDescriptor(int ch) {
@@ -275,22 +247,20 @@ static inline DMA_DESCRIPTOR_TypeDef *GetPrimaryDescriptor(int ch) {
 
 static inline DMA_DESCRIPTOR_TypeDef *GetAlternateDescriptor(int ch) {
 
-    return &DMA_DescriptorTable[ch&0xF+0x10];
+    return &DMA_DescriptorTable[(ch&0xF)+16];
 #if 0
     // After initialization,
     return (DMA_DESCRIPTOR_TypeDef *) DMA->DMA_ALTCTRLBASE + (ch&0xF)
 #endif
 }
-
-
 ///@}
 
 
 /**
  *  @brief  Handling of channel numbers
  *
- *  @note   In order to avoid separate functions for primary channels and alternative channels
- *          a number scheme is used.
+ *  @note   In order to avoid separate functions for primary channels and 
+ *          alternative channels a number scheme is used.
  *  @note   Channel numbers from 0 to 15 refer to primary channels
  *          Channel numbers from 16 to 31 refer to alternate channels.
  *
@@ -299,46 +269,74 @@ static inline DMA_DESCRIPTOR_TypeDef *GetAlternateDescriptor(int ch) {
  */
 ///@{
 static inline int GetPrimaryChannelNumber(int ch) { return ch&0xF; }
-static inline int GetAlternateChannelNumber(int ch) { return (ch&0xF)|0x10; }
+static inline int GetAlternateChannelNumber(int ch) { return ((ch&0xF))|0x10; }
 static inline int IsAlternateChannel(int ch) { return ch&0x10; }
 static inline int IsPrimaryChannel(int ch)   { return !(ch&0x10); }
 static inline unsigned GenChannelMask(int ch) { return (1<<(ch&0xF)); }
 ///@}
 
 
-/**
- *  @brief  Managing error signaling
- *
- *  @note   The program running on the host processor must always keep a record of which channels
- *          have recently asserted their dma_done[ ] outputs. It must compare the disabled channels
- *          list from step 1 (p. 61) , with the record of the channels that
- *          have recently set their dma_done[ ] outputs. The channel with no record of dma_done[C]
- *          being set is the channel that the ERROR occurred on.
- */
-static uint32_t enabled_channels = 0;
+
 
 /**
- * @brief  Pointer to callback routine
+ *  @brief  Interrupt routine for DMA
  *
- */
-
-static void (*DMA_CallbackFunction)(uint32_t errors, uint32_t done) = 0;
-
-/**
- * @brief  Interrupt routine for DMA
- *
+ * From RM: 
+ * >> If the controller detects an ERROR response on the AHB-Lite master 
+ * >> interface, it:
+ * >>         * disables the channel that corresponds to the ERROR
+ * >>         * sets dma_err HIGH.
+ * >> After the host processor detects that dma_err is HIGH, it must check which 
+ * >> channel was active when the ERROR occurred. It can do this by:
+ * >> 1. Reading the DMA_CHENS register to create a list of disabled channels.
+ * >>    When a channel asserts dma_done[ ] then the controller disables the 
+ * >>    channel. The program running on the host processor must always keep a 
+ * >>    record of which channels have recently asserted their 
+ * >>    dma_done[ ] outputs.
+ * >> 2. It must compare the disabled channels list from step 1 (p. 61) , with 
+ * >>    the record of the channels that have recently set their 
+ * >>    dma_done[ ] outputs. The channel with no record of dma_done[C] being
+ * >>    set is the channel that the ERROR occurred on.
+ * >> 
  */
 
 void DMA_IRQHandler(void) {
 
-    uint32_t errors = 0;
-    uint32_t iflags = DMA->IF;
-    if( (iflags&DMA_IF_ERR) != 0 ) {
-        errors = ~(DMA->CHENS)&enabled_channels;
-    }
-    uint32_t done = iflags&CHMASK;
 
-    if( DMA_CallbackFunction ) DMA_CallbackFunction(errors,done);
+    uint32_t intflags = DMA->IF;            // Get all done channels
+    uint32_t done = intflags&CHMASK;        // Only the done flags
+    uint32_t nowenabled = DMA->CHENS;       // Get all channels that are active NOW
+    
+    if( (intflags&DMA_IF_ERR) != 0 ) {
+        // Clear Error register
+        DMA->ERRORC = DMA_ERRORC_ERRORC;
+        // What else?
+        // What happens to the ongoing operations?
+    }
+    
+    /*
+     * When a channel is enabled but it is not enabled any longer and
+     * it is not done
+     */
+    error_channels = (enabled_channels&~nowenabled)&~done;
+    
+    /*
+     * Store done information
+     */
+    done_channels |= done;
+    
+    /*
+     * Clear interrupt and update enabled channels info
+     */
+    DMA->IFC = done;            // reset all done flags
+    enabled_channels &= ~done;  // mirror it
+
+    /*
+     * Callback function
+     * Should there be one for each channel
+     */
+    if( DMA_CallbackFunction )
+        DMA_CallbackFunction(error_channels,done_channels);
 
 }
 
@@ -346,13 +344,8 @@ void DMA_IRQHandler(void) {
 
 
 /**
- * @brief  Short description of function
+ * @brief  Disable IRQ for the  DMA device
  *
- * @note   Long description of function
- *
- * @param  Description of parameter
- *
- * @return Description of return parameters
  */
 
 void DMA_DisableIRQ(void) {
@@ -372,6 +365,7 @@ void DMA_DisableIRQ(void) {
 void DMA_EnableIRQ(void) {
 
     NVIC_ClearPendingIRQ(DMA_IRQn);
+    NVIC_SetPriority(DMA_IRQn, DMA_PRIO);
     NVIC_EnableIRQ(DMA_IRQn);
 
     return;
@@ -379,10 +373,29 @@ void DMA_EnableIRQ(void) {
 
 
 /**
- * @brief  DMA_Reset
+ *  @brief  DMA_DeInit
  *
- * @param  Reset the DMA device to default
+ *  @note   Reset the DMA device to default and restore the DMA to reset state
  *
+ *  @note  It does disable DMA_CLK!!!!!
+ */
+
+void DMA_DeInit(void) {
+
+    DMA_Reset();
+    
+    CMU->HFCORECLKEN0 &= ~CMU_HFCORECLKEN0_DMA;
+    CMU->HFPERCLKDIV  &= ~CMU_HFPERCLKDIV_HFPERCLKEN;
+
+}
+
+
+/**
+ *  @brief  DMA_Reset
+ *
+ *  @note   Reset the DMA device to default
+ *
+ *  @note  It does not disable DMA_CLK!!!!!
  */
 
 void DMA_Reset(void) {
@@ -395,7 +408,7 @@ void DMA_Reset(void) {
     DMA->IEN = _DMA_IEN_RESETVALUE;
     DMA->IFC = _DMA_IFC_MASK;
 
-    // Clear  Enable and Select rregisters
+    // Clear  Enable and Select registers
     DMA->CHENC  = _DMA_CHENC_MASK;
     DMA->CHALTC = _DMA_CHALTC_MASK;
     DMA->CHPRIC = _DMA_CHPRIC_MASK;
@@ -407,13 +420,13 @@ void DMA_Reset(void) {
     // Clear Error register
     DMA->ERRORC = DMA_ERRORC_ERRORC;
 
-    // Clear channel contgrol registers
+    // Clear channel control registers
     for(int ch=0;ch<DMA_CHAN_COUNT;ch++) {
         DMA->CH[ch].CTRL = _DMA_CH_CTRL_RESETVALUE;
     }
 
-    // Recording which channels are enabled
-    enabled_channels = 0;
+    // State channel variable are used to detect error
+    ClearChannelStateAll();
 
     return;
 }
@@ -454,39 +467,74 @@ const int indexmax = DMA_NUMPRIMARYCHANNELS;
     DMA->CTRLBASE = (uint32_t) DMA_DescriptorTable;
 
     // Enable device
-
     DMA->CONFIG |= DMA_CONFIG_EN;
+    
+    // Clear channel state variables (already done in DMA_Reset) 
+    ClearChannelStateAll();
+    
+    
 }
 
+/**
+ * @brief  Enable Channel with number *ch*
+ *
+ * @note   Enable the channel effectivally starting the DMA transfer
+ */
+
+void DMA_EnableChannel(unsigned ch) {
+uint32_t chmask = (1UL<<ch);
+
+    DMA->CHENS = chmask;
+    SetChannelState(chmask);
+    
+    return;
+}
 
 /**
- * @brief  Enable Channel with number n
-
+ * @brief  Enable Channels according a bit mask
+ *
  * @note   Long description of function
  *
  */
 
-void DMA_EnableChannel(unsigned chmask) {
+void DMA_EnableChannels(unsigned chmask) {
 
     DMA->CHENS = chmask;
-    enabled_channels |= chmask;
+    SetChannelState(chmask);
+    
     return;
 }
 
+/**
+ * @brief  Disable Channel with number *ch*
+ *
+ * @note   According 8.2.4, *he program running on the host processor 
+ *         must always keep a record of which channels have recently asserted
+ *         their dma_done[ ] outputs.*
+ */
+
+void DMA_DisableChannel(unsigned ch) {
+uint32_t chmask = (1UL<<ch);
+
+    DMA->CHENC = chmask;
+    ClearChannelState(chmask);
+    
+    return;
+}
 
 /**
- * @brief  Disable Channels corresponding to 1 in the chmask
+ * @brief  Disable Channels corresponding to 1s in the chmask
  *
  * @note   According 8.2.4, *he program running
- *         on the host processor must always keep a record of which channels have recently asserted
- *         their dma_done[ ] outputs.*
- *
+ *         on the host processor must always keep a record of which channels
+ *         have recently asserted their dma_done[ ] outputs.*
  */
 
 void DMA_DisableChannels(unsigned chmask) {
 
     DMA->CHENC = chmask;
-    enabled_channels &= ~(chmask);
+    ClearChannelState(chmask);
+    
     return;
 }
 
@@ -527,8 +575,6 @@ void DMA_DeselectAlternateDescriptor(int ch) {
  * @brief  Get State of DMA device
 
  * @note   Get the state of the DMA device.
- *
- * @note   It can be
  *
  */
 
@@ -626,9 +672,13 @@ const uint32_t cycle = DMA_CTRL_CYCLE_CTRL_AUTO;
     } else {
         DMA->CHALTS = chmask;
     }
-
+    
     // Only for Auto
-    DMA->CHSWREQ = (1<<pch);
+    DMA->CHSWREQ = chmask;
+    
+    // Clear state variables
+    ClearChannelState(chmask);
+    
     return 0;
 }
 /**
@@ -645,13 +695,21 @@ const uint32_t cycle = DMA_CTRL_CYCLE_CTRL_AUTO;
         pDesc->CTRL = (pDesc->CTRL&~_DMA_CTRL_CYCLE_CTRL_MASK)|DMA_CTRL_CYCLE_CTRL_INVALID;
     }
 
+    uint32_t chmask = (1UL<<ch);
     // Enable channel if it not yet enabled
     if ( IsPrimaryChannel(ch) ) {
-        DMA->CHENC = (1<<ch);
+        chmask = (1UL<<ch);
+        DMA->CHENC = chmask;
     } else {
         int ach = GetPrimaryChannelNumber(ch);
-        DMA->CHALTC = (1<<ach);
+        chmask = (1UL<<ch);
+        DMA->CHALTC = chmask;
     }
+
+    // Clear state variables
+    enabled_channels &= ~(chmask);
+    error_channels   &= ~(chmask);
+    done_channels    &= ~(chmask);
 
     return 0;
 }

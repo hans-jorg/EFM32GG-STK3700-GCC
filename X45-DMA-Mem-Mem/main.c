@@ -96,12 +96,16 @@ uint8_t *lim = a+size;
  *         HFPERCLK  = HFCLK
  ****************************************************************************/
 
+#define AREASIZE (100)
+#define MEMCPY_CHANNEL            (4)
+
+char area1[AREASIZE+2]; // 2 guard positions, one before and other after
+char area2[AREASIZE+2]; // 2 guard positions, one before and other after
+
 int main(void) {
 char line[100];
 int tryn = 0;
-#define AREASIZE (100)
-char area1[AREASIZE+2];
-char area2[AREASIZE+2];
+
     /* Configure LEDs */
     LED_Init(LED1|LED2);
 
@@ -118,23 +122,27 @@ char area2[AREASIZE+2];
 
     __enable_irq();
 
-    // TODO: Fazer test incrementing the values in the source
-    int     ch = 4;
-    uint8_t c  = 1;
-    do {
-        printf("Trying an area full of %d....\n",c);
-        fill_constant(area1,c,AREASIZE+2);       // Initialize source area
-        memset(area2,0,AREASIZE+2);       // Clear destination area
-        DMA_SetupTransferMemToMem_8(ch,area1+1,area2+1,AREASIZE);
-        DMA_StartTransfer(ch);
-        while ( DMA_GetTransferStatus(ch) ) {}
-        int rc = test_constant(area2+1,c,AREASIZE);
-        if( (rc == 1) && (area2[0]==0) && (area2[AREASIZE-1]==0) ) {
-            printf("    Transfer OK\n");
-        } else {
-            printf("    Transfer Error\n");
-        }
-        c++;
-    } while (c < 2);
+    // TODO: Test incrementing the values in the source
+
+    while (1) {
+        for(uint8_t c  = 'A';c<='Z';c++) {
+            printf("Trying to transfer an area full of %c....\n",c);
+            fill_constant(area1,c,AREASIZE+2);// Initialize source area
+            memset(area2,0,AREASIZE+2);       // Clear destination area
+            DMA_SetupTransferMemToMem_8(MEMCPY_CHANNEL,area1+1,area2+1,AREASIZE);
+            DMA_StartTransfer(MEMCPY_CHANNEL);
+            while ( DMA_GetTransferStatus(MEMCPY_CHANNEL) ) {}
+            int rc = test_constant(area2+1,c,AREASIZE);
+            if( rc == 1 ) {
+                if ( (area2[0]!=0) || (area2[AREASIZE-1]!=0) ) {
+                    printf("    Guard positions modified\n");
+                } else {
+                    printf("    Transfer OK\n");
+                }
+            } else {
+                printf("    Transfer Error\n");
+            }
+        } // for(c)
+    }; // loop forever
 
 }

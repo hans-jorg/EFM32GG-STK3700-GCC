@@ -49,6 +49,15 @@ To configure a DMA transfer, one must specify:
 
 Two sizes are specified. One is the size of the full transfer and the other the arbitration interval.
 
+### Include files
+
+These files are included in the efm32gg990f1024.h device file.
+
+
+* efm32gg_dma_descriptor.h: DMA (in RAM) descriptor register and bit field definitions
+* efm32gg_dma_ch.h: DMA Channel register and bit field definitions
+* efm32gg_dma.h: DMA registers and bit field definitions
+* efm32gg_dmactrl.h: DMA CTRL bit fields
 
 ### Example
 
