@@ -267,8 +267,10 @@ int c;
             continue;
         }
         putchar(c);
-        *p++ = c;
-        n--;
+        if( n > 0 ) {
+            *p++ = c;
+            n--;
+        }
     }
     *p = 0;
     return s;

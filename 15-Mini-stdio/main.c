@@ -54,7 +54,7 @@ uint64_t l = tick+delay;
 
 ///@{
 int putchar(int c) { UART_SendChar(c); return 0; }
-int getchar(int c) { return UART_GetChar(); }
+int getchar(void) { return UART_GetChar(); }
 ///@}
 
 /**************************************************************************//**
@@ -88,9 +88,9 @@ char line[100];
 
     printf("\r\n\n\n\rHello\n\r");
     while (1) {
-        printf("\r\n\n\n\rWhat is your name?\n");
-        fgets(line,99,stdin);
-        printf("Hello %s\n",line);
+        printf("\r\nWhat is your name?\n");
+        fgets(line,30,stdin);
+        printf("\nHello %s\n",line);
     }
 
 }

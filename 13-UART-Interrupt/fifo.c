@@ -1,14 +1,19 @@
 /**
- * @file    buffer.c
+ * @file    fifo.c
  *
- * @note    FIFO buffer for chars
- * @note    Uses a global data defined by DECLARE_BUFFER_AREA macro
- * @note    It does not use malloc
- * @note    Size must be defined in DECLARE_BUFFER_AREA and in buffer_init (Ugly)
+ * @note    This is a FIFO (First In-First Out) buffer for chars
+ *
+ * @note    Uses a global data defined by FIFO_DECLARE_AREA macro
+ *
+ * @note    It does not use dynamic allocation (malloc or free)
+ *
+ * @note    Size must be defined in FIFO_DECLARE_AREA and in fifo_init
+ *          This is ugly
+ *
  * @note    Uses as many dependencies as possible
  */
 
-#include "buffer.h"
+#include "fifo.h"
 
 #define USE_ACCESSCONTROL
 
@@ -25,9 +30,9 @@
  * @brief   initializes a fifo area
  */
 
-buffer
-buffer_init(void *b, int n) {
-buffer f = (buffer) b;
+Fifo_TypeDef
+fifo_init(void *b, int n) {
+Fifo_TypeDef f = (Fifo_TypeDef) b;
 
     ENTER_CRITICAL_SECTION();
     f->front = f->rear = f->data;
@@ -45,7 +50,7 @@ buffer f = (buffer) b;
  */
 
 void
-buffer_deinit(buffer f) {
+fifo_deinit(Fifo_TypeDef f) {
 
     ENTER_CRITICAL_SECTION();
     f->size = 0;
@@ -59,8 +64,8 @@ buffer_deinit(buffer f) {
  *
  * @note    Does not free area. For now identical to deinit
  */
- void
- buffer_clear(buffer f) {
+void
+fifo_clear(Fifo_TypeDef f) {
 
     ENTER_CRITICAL_SECTION();
     f->size = 0;
@@ -76,12 +81,12 @@ buffer_deinit(buffer f) {
  */
 
 int
-buffer_insert(buffer f, char x) {
+fifo_insert(Fifo_TypeDef f, char ch) {
 
-    if( buffer_full(f) )
+    if( fifo_full(f) )
         return -1;
     ENTER_CRITICAL_SECTION();
-    *(f->rear++) = x;
+    *(f->rear++) = ch;
     f->size++;
     if( (f->rear - f->data) > f->capacity )
         f->rear = f->data;
@@ -96,10 +101,10 @@ buffer_insert(buffer f, char x) {
  */
 
 int
-buffer_remove(buffer f) {
+fifo_remove(Fifo_TypeDef f) {
 char ch;
 
-    if( buffer_empty(f) )
+    if( fifo_empty(f) )
         return -1;
     ENTER_CRITICAL_SECTION();
     ch = *(f->front++);

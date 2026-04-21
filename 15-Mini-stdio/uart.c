@@ -26,21 +26,22 @@
 #include "em_device.h"
 #include "clock_efm32gg_ext.h"
 #include "uart.h"
-#include "buffer.h"
+#include "fifo.h"
 
 /**
  * @brief   Macros to enhance portability
  */
 #define BIT(N) (1U<<(N))
-#define ENTER_ATOMIC() __disable_irq()
-#define EXIT_ATOMIC()  __enable_irq()
+#define ENTER_ATOMIC()          __disable_irq()
+#define EXIT_ATOMIC()           __enable_irq()
 
 /**
  * @brief   Configuration
  */
-/// Buffer size for input and output
-#define INPUTBUFFERSIZE 100
-#define OUTPUTBUFFERSIZE 100
+/// fifo size for input and output
+#define INPUTFIFO_SIZE          (100)
+#define OUTPUTFIFO_SIZE         (100)
+
 /// Interrupt level
 #define RXINTLEVEL 6
 #define TXINTLEVEL 6
@@ -62,10 +63,10 @@ static GPIO_P_TypeDef * const GPIOF = &(GPIO->P[5]);    // GPIOF
  * @note    To avoid use of malloc, it uses a macro to define area
  */
 
-DECLARE_BUFFER_AREA(inputbufferarea,INPUTBUFFERSIZE);
-DECLARE_BUFFER_AREA(outputbufferarea,OUTPUTBUFFERSIZE);
-buffer inputbuffer = 0;
-buffer outputbuffer = 0;
+FIFO_DECLARE_AREA(inputfifo_area,INPUTFIFO_SIZE);
+FIFO_DECLARE_AREA(outputfifo_area,OUTPUTFIFO_SIZE);
+Fifo_TypeDef inputfifo = 0;
+Fifo_TypeDef outputfifo = 0;
 
 
 /**
@@ -88,8 +89,8 @@ void UART_Reset(void) {
     UART0->IRCTRL    = _UART_IRCTRL_RESETVALUE;
     UART0->INPUT     = _UART_INPUT_RESETVALUE;
 
-    buffer_deinit(inputbuffer);
-    buffer_deinit(outputbuffer);
+    fifo_deinit(inputfifo);
+    fifo_deinit(outputfifo);
 
 }
 
@@ -149,9 +150,9 @@ uint32_t bauddiv;
     // Set which location to be used
     UART0->ROUTE = UART_ROUTE_LOCATION_LOC1 | UART_ROUTE_RXPEN | UART_ROUTE_TXPEN;
 
-    // Initializes buffers
-    inputbuffer  = buffer_init(inputbufferarea,INPUTBUFFERSIZE);
-    outputbuffer = buffer_init(outputbufferarea,OUTPUTBUFFERSIZE);
+    // Initializes fifo, one for input and the other for output
+    inputfifo  = fifo_init(inputfifo_area,INPUTFIFO_SIZE);
+    outputfifo = fifo_init(outputfifo_area,OUTPUTFIFO_SIZE);
 
     // Enable interrupts on UART
     UART0->IFC = (uint32_t) -1;
@@ -174,18 +175,17 @@ uint32_t bauddiv;
 /**
  * @brief   UART Interrupt routine for receiving data
  *
- * @note    Receives and put it in buffer
+ * @note    Receives and put it in fifo
  */
 
 void UART0_RX_IRQHandler(void) {
 uint8_t ch;
 
-    if( UART0->STATUS&UART_STATUS_RXDATAV ) {
-        // Put in input buffer
+    if ( UART0->IF&(UART_IF_RXDATAV|UART_IF_RXFULL) ) {
+        // Put in input fifo_
         ch = UART0->RXDATA;
-        (void) buffer_insert(inputbuffer,ch);
+        (void) fifo_insert(inputfifo,ch);
     }
-
 }
 
 
@@ -199,16 +199,16 @@ uint8_t ch;
 void UART0_TX_IRQHandler(void) {
 uint8_t ch;
 
-    // if data in output buffer and transmitter idle, send it
+    // if there is data in output fifo and transmitter idle, send it immediately
     if( UART0->IF&UART_IF_TXC ) {
         if( UART0->STATUS&UART_STATUS_TXBL ) {
-            if( !buffer_empty(outputbuffer) ) {
-                // Get from output buffer
-                ch = buffer_remove(outputbuffer);
+            if( !fifo_empty(outputfifo) ) {
+                // Get from output fifo
+                ch = fifo_remove(outputfifo);
                 UART0->TXDATA = ch;
             }
         }
-        UART0->IFC = UART_IFC_TXC;
+       UART0->IFC = UART_IFC_TXC;
     }
 }
 
@@ -231,16 +231,13 @@ uint32_t w;
  * @note    Generates an interrupt to send char
  */
 
-void UART_SendChar(char c) {
-
-    if ( buffer_empty(outputbuffer) ) {
-        ENTER_ATOMIC();
-        buffer_insert(outputbuffer,c);
-        UART0->IFS |= UART_IFS_TXC;
-        EXIT_ATOMIC();
+void UART_SendChar(char ch) {
+    if ( fifo_empty(outputfifo) ) {
+        while ( (UART0->STATUS&UART_STATUS_TXBL) == 0 ) {}
+        UART0->TXDATA = ch;
     } else {
         ENTER_ATOMIC();
-        (void) buffer_insert(outputbuffer,c);
+        fifo_insert(outputfifo,ch);
         EXIT_ATOMIC();
     }
 }
@@ -260,15 +257,19 @@ void UART_SendString(char *s) {
 /**
  * @brief   Get a char from UART without waiting
  *
- * @note    Does no block. Returns 0 when there is none
+ * @note    Does not block. Returns 0 when there is none
  */
 
 unsigned UART_GetCharNoWait(void) {
+int ch;
 
-    if( buffer_empty(inputbuffer) )
+    if( fifo_empty(inputfifo) )
         return 0;
 
-    return buffer_remove(inputbuffer);
+    ENTER_ATOMIC();
+    ch = fifo_remove(inputfifo);
+    EXIT_ATOMIC();
+    return ch;
 }
 
 /**
@@ -278,20 +279,78 @@ unsigned UART_GetCharNoWait(void) {
  */
 
 unsigned UART_GetChar(void) {
+int ch;
 
-    while( buffer_empty(inputbuffer) ) {}
+    while( fifo_empty(inputfifo) ) {}
 
-    return buffer_remove(inputbuffer);
+    ENTER_ATOMIC();
+    ch = fifo_remove(inputfifo);
+    EXIT_ATOMIC();
+    return ch;
 }
 
 /**
- * @brief   Get a string from UART
+ * @brief   Disable interrupts
  *
- * @note    Does block!!!!!
- * @note    Not implemented yet
  */
 
-void UART_GetString(char *s, int n) {
+void UART_EnableInterrupts(uint32_t m) {
 
-    return;
+    if( m&UART_TXINT ) UART0->IEN |= UART_IEN_TXC;
+    if( m&UART_RXINT ) UART0->IEN |= UART_IEN_RXDATAV;
 }
+
+/**
+ * @brief   Disable interrupts
+ *
+ */
+
+void UART_DisableInterrupts(uint32_t m) {
+
+    if( m&UART_TXINT ) UART0->IEN &= ~UART_IEN_TXC;
+    if( m&UART_RXINT ) UART0->IEN &= ~UART_IEN_RXDATAV;
+}
+
+/**
+ * @brief   Output char using polling
+ *
+ * @note    Does block!!!!!
+ * @note    Trasmitter interrupts must be disabled
+ */
+
+void UART_PutCharPolling(char ch) {
+
+    while ( (UART0->STATUS&UART_STATUS_TXBL) == 0 ) {}
+    UART0->TXDATA = ch;
+
+}
+
+
+/**
+ * @brief   Flush fifo
+ *
+ * @note    Does block!!!!!
+ */
+
+int UART_Flush(void) {
+int cnt;
+int ch;
+
+    // Clear input buffer
+    fifo_clear(inputfifo);
+
+    // Clear output fifo
+    cnt = 0;
+    // Disable interrupts
+    UART0->IEN &= ~(UART_IEN_TXC|UART_IEN_RXDATAV);
+    while( ! fifo_empty(outputfifo) ) {
+        // Wait until UART TX is free
+        ch = fifo_remove(outputfifo);
+        UART_PutCharPolling(ch);
+        cnt++;
+    }
+    // Reenable interrupts
+    UART0->IEN |= UART_IEN_TXC|UART_IEN_RXDATAV;
+    return cnt;
+}
+
