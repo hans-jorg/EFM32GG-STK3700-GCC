@@ -30,7 +30,7 @@
 #include "os.h"
 
 #include "uart.h"
-#include "buffer.h"
+#include "fifo.h"
 
 
 /**

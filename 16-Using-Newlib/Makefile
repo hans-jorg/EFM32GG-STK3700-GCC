@@ -181,8 +181,8 @@ ifeq (${INSIDEVSCODE},no)
 #
 # default debugger
 #
-debug: gdb
-#debug: tui
+#debug: gdb
+debug: tui
 #debug: ddd
 #debug: nemiver
 endif

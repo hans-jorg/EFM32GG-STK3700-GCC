@@ -6,6 +6,7 @@
 
 #include <stdint.h>
 #include <stdio.h>
+#include <string.h>
 /*
  * Including this file, it is possible to define which processor using command line
  * E.g. -DEFM32GG995F1024
@@ -109,8 +110,6 @@ int tryn = 0;
     /* Configure LEDs */
     LED_Init(LED1|LED2);
 
-    ConfigureClock(SPEED_HIGHEST);
-
     /* Turn on LEDs */
     LED_Write(0,LED1|LED2);
     
@@ -124,8 +123,11 @@ int tryn = 0;
     /* Print message using Newlib */
     printf("\n\rUsando printf\n\r");
     
+    /* Changing clock frequency */
+    ConfigureClock(SPEED_HIGHEST);
     
-#define TEST 30
+    
+#define TEST 4
 
 #if TEST == 1
     char s[] = { [0 ... 197]='*','\n','\r' }; // Only gcc!!!
@@ -180,6 +182,15 @@ int tryn = 0;
         Delay(1000);
     }
     
+#elif TEST == 4
+    UART_SendString("\n\rHello using UART_SendString\n");
+    printf("\n\rHello using printf\n");
+    
+    while(1) {
+        printf("\nYour name: ");
+        fgets(line,99,stdin);
+        printf("Hello %s\n",line);
+    }
 #else
 
     UART_SendString("\n\rHello using UART_SendString\n");
@@ -189,8 +200,25 @@ int tryn = 0;
     while (1) {
         printf("Try %d\n",tryn++);
         printf("\nYour name: ");
-        fgets(line,99,stdin);
+        #if 1
+        //fgets(line,99,stdin);
+        // read chars until NL or CR
+        int ch = 1;
+        int n = 0;
+        while( (n < 90) && (ch != 0) ) {
+            ch = UART_GetChar();
+            if( (ch == '\r') || (ch == '\n') ) {
+                UART_SendChar('\n');
+                UART_SendChar('\r');
+                ch = 0;
+            } else {
+                UART_SendChar(ch);
+                line[n++]=ch;
+            }
+        }
+        line[n++] = 0;
         printf("Hello %s\n",line);
+        #endif
 
         Delay(100);
     }
