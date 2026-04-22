@@ -22,7 +22,8 @@
 //#include "efm32gg_dma.h"
 //#include "efm32gg_dma_descriptor.h"
 
-/* These files are include because the address used to read/write data is needed to configure DMA */
+/* These files are include because the address used to read/write data is */
+/*    needed to configure DMA */
 /*#include "efm32gg_adc.h"*/
 /*#include "efm32gg_dac.h"*/
 /*#include "efm32gg_usart.h"*/

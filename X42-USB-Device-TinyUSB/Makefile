@@ -85,7 +85,7 @@ PARTCLASSCMSIS=EFM32GG
 # Subdirectory
 TUDIR=tinyusb/src
 # Source files
-TUSRC=${TUDIR}/tusb.c
+#TUSRC=${TUDIR}/tusb.c
 # Include files
 TUINCDIR=${TUDIR}
 # Defines

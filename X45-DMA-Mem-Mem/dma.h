@@ -179,17 +179,17 @@ int  DMA_Init(void);
 void DMA_DeInit(void);
 void DMA_Reset(void);
 
-int  DMA_SetupTransferMemToMem_8(int ch, uint8_t *src, uint8_t *dst, unsigned num);
-int  DMA_SetupTransferMemToMem_16(int ch, uint16_t *src, uint16_t *dst, unsigned num);
-int  DMA_SetupTransferMemToMem_32(int ch, uint32_t *src, uint32_t *dst, unsigned num);
+int  DMA_SetupTransferMemToMem_8(int ch, uint8_t *src, uint8_t *dst, uint32_t num);
+int  DMA_SetupTransferMemToMem_16(int ch, uint16_t *src, uint16_t *dst, uint32_t num);
+int  DMA_SetupTransferMemToMem_32(int ch, uint32_t *src, uint32_t *dst, uint32_t num);
 
 int  DMA_StartTransfer(int ch);
 int  DMA_StopTransfer(int ch);
 
 
-unsigned DMA_GetDeviceState(void);
-unsigned DMA_GetTransferStatus(int ch);
+uint32_t DMA_GetDeviceState(void);
+uint32_t DMA_GetTransferStatus(int ch);
 
-int  DMA_ConfigureDescriptor(int ch, unsigned size, void *src, unsigned srcinc, void *dst, unsigned dstinc, unsigned number);
+int  DMA_ConfigureDescriptor(int ch, uint32_t size, void *src, uint32_t srcinc, void *dst, uint32_t dstinc, uint32_t number);
 
 #endif /* DMA_H */

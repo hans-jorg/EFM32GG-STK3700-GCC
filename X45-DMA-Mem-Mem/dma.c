@@ -471,8 +471,6 @@ const int indexmax = DMA_NUMPRIMARYCHANNELS;
     
     // Clear channel state variables (already done in DMA_Reset) 
     ClearChannelStateAll();
-    
-    
 }
 
 /**
@@ -488,7 +486,7 @@ uint32_t chmask = (1UL<<ch);
     SetChannelState(chmask);
     
     return;
-}
+}  
 
 /**
  * @brief  Enable Channels according a bit mask
@@ -578,7 +576,7 @@ void DMA_DeselectAlternateDescriptor(int ch) {
  *
  */
 
-unsigned DMA_GetDeviceState(void) {
+uint32_t DMA_GetDeviceState(void) {
 
     return (DMA->STATUS&_DMA_STATUS_STATE_MASK)>>_DMA_STATUS_STATE_SHIFT;
 
@@ -587,7 +585,7 @@ unsigned DMA_GetDeviceState(void) {
 
 /**
  * @brief  Get Transfer Status
-
+ *
  * @note   Get the status of the transfer in a specified channel
  *
  * @note   The Cycle field is set to 0 by the DMA, after completing the transfer
@@ -595,7 +593,7 @@ unsigned DMA_GetDeviceState(void) {
  *
  */
 
-unsigned DMA_GetTransferStatus(int ch) {
+uint32_t DMA_GetTransferStatus(int ch) {
 DMA_DESCRIPTOR_TypeDef *pDesc = &DMA_DescriptorTable[ch];
 
     return (pDesc->CTRL&_DMA_CTRL_CYCLE_CTRL_MASK)>>_DMA_CTRL_CYCLE_CTRL_SHIFT;
@@ -610,7 +608,7 @@ DMA_DESCRIPTOR_TypeDef *pDesc = &DMA_DescriptorTable[ch];
  *
  */
 
-int DMA_SetupTransferMemToMem_8(int ch, uint8_t *src, uint8_t *dst, unsigned num) {
+int DMA_SetupTransferMemToMem_8(int ch, uint8_t *src, uint8_t *dst, uint32_t num) {
 
     int rc = DMA_ConfigureDescriptor(ch, 8, src, 1, dst, 1, num);
 
@@ -624,7 +622,7 @@ int DMA_SetupTransferMemToMem_8(int ch, uint8_t *src, uint8_t *dst, unsigned num
  * @note   Long description of function
  *
  */
-int DMA_SetupTransferMemToMem_16(int ch, uint16_t *src, uint16_t *dst, unsigned num) {
+int DMA_SetupTransferMemToMem_16(int ch, uint16_t *src, uint16_t *dst, uint32_t num) {
 
     int rc = DMA_ConfigureDescriptor(ch, 16, src, 2, dst, 2, num);
 
@@ -639,7 +637,7 @@ int DMA_SetupTransferMemToMem_16(int ch, uint16_t *src, uint16_t *dst, unsigned 
  * @note   Long description of function
  *
  */
-int DMA_SetupTransferMemToMem_32(int ch, uint32_t *src, uint32_t *dst, unsigned num) {
+int DMA_SetupTransferMemToMem_32(int ch, uint32_t *src, uint32_t *dst, uint32_t num) {
 
     int rc = DMA_ConfigureDescriptor(ch, 32, src, 4, dst, 4, num);
 
@@ -707,9 +705,7 @@ const uint32_t cycle = DMA_CTRL_CYCLE_CTRL_AUTO;
     }
 
     // Clear state variables
-    enabled_channels &= ~(chmask);
-    error_channels   &= ~(chmask);
-    done_channels    &= ~(chmask);
+    ClearChannelState(chmask);
 
     return 0;
 }
@@ -719,7 +715,7 @@ const uint32_t cycle = DMA_CTRL_CYCLE_CTRL_AUTO;
  *
  */
 
-int  DMA_ConfigureDescriptor(int ch, unsigned size, void *src, unsigned srcinc, void *dst, unsigned dstinc, unsigned number) {
+int  DMA_ConfigureDescriptor(int ch, uint32_t size, void *src, uint32_t srcinc, void *dst, uint32_t dstinc, uint32_t number) {
 uint32_t control;
 uint32_t sc;
 

@@ -98,7 +98,7 @@ unsigned m = 1<<(n-1);
  *         HFPERCLK  = HFCLK
  */
 
-#include "uart2.h"
+#include "uart3.h"
 
 #define DELAYVAL 2
 

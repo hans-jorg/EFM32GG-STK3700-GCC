@@ -18,7 +18,7 @@
  */
 
 
-int DMA_Init();
+int DMA_Init(uint32_t);
 
 
 

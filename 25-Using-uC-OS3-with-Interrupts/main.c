@@ -20,7 +20,7 @@
 #include "os.h"
 
 #include "led.h"
-#include "uart.h"
+#include "uart2.h"
 
 
 /**

@@ -13,10 +13,10 @@
  * #include "efm32gg995f1024.h"
  */
 #include "em_device.h"
-#include "clock_efm32gg_ext.h"
+#include "clock_efm32gg2.h"
 
 #include "led.h"
-#include "uart.h"
+#include "uart3.h"
 
 //void UART0_TX_IRQHandler(void);
 #define ENTER_ATOMIC() __disable_irq()
@@ -77,7 +77,7 @@ int tryn = 0;
     SysTick_Config(SystemCoreClock/TickDivisor);
 
     /* Configure UART */
-    UART_Init();
+    //UART_Init(UART0);
 
     __enable_irq();
 

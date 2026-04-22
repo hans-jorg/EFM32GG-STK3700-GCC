@@ -56,7 +56,7 @@ static inline char * GetStackPointer(void) { return (char *) __get_MSP(); }
  *
  */
 //@{
-#include "uart2.h"
+#include "uart3.h"
 
 static inline void SerialInit(int chn)           { UART_Init(UART0);                }
 static inline void SerialWrite(int chn, char c)  { UART_SendChar(UART0,c);          }

@@ -23,7 +23,7 @@
 
 #include "led.h"
 #include "button.h"
-#include "uart.h"
+#include "uart2.h"
 
 #define TASKDELAYUNTIL
 

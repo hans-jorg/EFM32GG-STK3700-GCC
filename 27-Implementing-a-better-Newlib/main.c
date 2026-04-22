@@ -18,6 +18,7 @@
 #include "clock_efm32gg2.h"
 #include "led.h"
 #include "lcd.h"
+#include "uart3.h"
 
 /*****************************************************************************
  * @brief  SysTick interrupt handler
@@ -70,8 +71,6 @@ uint64_t lim = ticks+v;       // Missing processing of overflow here
  *         HFCORECLK = HFCLK
  *         HFPERCLK  = HFCLK
  */
-
-#include "uart2.h"
 
 #define DELAYVAL 2
 

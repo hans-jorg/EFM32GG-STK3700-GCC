@@ -50,6 +50,16 @@ typedef enum {
         STATE_RX_RECEIVEDATA,
         STATE_TXRX_SENDDATA,
         STATE_TXRX_RECEIVEDATA,
+        // Just to compile. I dont remember what I was thinking
+        STATE_ERROR,
+        STATE_TX_STOP,
+        STATE_RX_SENDADDR1,
+        STATE_RX_SENDADDR2,
+        STATE_RX_STOP,
+        STATE_TXRX_SENDADDR1,
+        STATE_TXRX_SENDADDR2,
+        STATE_TXRX_SENDLAST,
+        STATE_TXRX_STOP,
     } State_t;
 
 typedef enum {
@@ -527,7 +537,7 @@ TransferInfo *ti;
     // Initialize TransferInfo struct
     TransferInfoInit(ti,0,0);
 
-    nab = DecomposeAddress(address, ti->outbuffer);
+    nab = DecomposeAddress(address, ti->outbuffer,0);
     ti->outpointer   = ti->outbuffer;
     ti->outlimit     = ti->outpointer+nab+size-1;
     ti->operation    = OP_SEND;
@@ -613,7 +623,7 @@ TransferInfo *ti;
     // Initialize TransferInfo struct
     TransferInfoInit(ti,0,0);
 
-    nab = DecomposeAddress(address, ti->outbuffer);
+    nab = DecomposeAddress(address, ti->outbuffer,0);
     ti->outpointer   = ti->outbuffer;
     ti->outlimit     = ti->outpointer+nab+size-1;
     ti->operation    = OP_RECEIVE;

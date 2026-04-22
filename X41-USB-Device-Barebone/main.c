@@ -71,7 +71,7 @@ uint64_t lim = ticks+v;       // Missing processing of overflow here
  *         HFPERCLK  = HFCLK
  */
 
-#include "uart2.h"
+#include "uart3.h"
 
 #define DELAYVAL 2
 
