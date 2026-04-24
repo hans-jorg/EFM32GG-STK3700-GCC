@@ -49,6 +49,30 @@ To configure a DMA transfer, one must specify:
 
 Two sizes are specified. One is the size of the full transfer and the other the arbitration interval.
 
+### Debug
+
+From section 3.4-Debug Techniques of the AN0013 Application note
+
+Debugging DMA behaviour poses some extra challenges compared to debugging CPU execution since
+it is not possible to halt or single step the DMA's operations. There are however some techniques that
+can be used to get a better view into what the DMA is doing. Such techniques include:
+
+• Use memory view or variable watch points in the IDE to check that contents of any buffers in RAM
+are written correctly
+• Use variable watch points for the DMA descriptors (dmaControlBlock, in software examples) to
+check that they are configured as expected.
+• See DMA_CHREQSTATUS register to make sure the DMA request is set as expected.
+• Use DMA_CHSWREQ to trigger DMA requests from SW to see that DMA responds as expected for
+each request.
+• Use peripheral data underflow/overflow interrupts to raise an alarm if data is not transferred fast
+enough by DMA.
+• Check if DMA_ERR flag is set. This indicates that the DMA is trying to access a memory region that
+is not mapped to a specific slave or trying to write to a read-only region (like Flash). This is most often
+caused by improperly set DMA descriptors or source/destination pointers that are incremented too far.
+.
+
+
+
 ### Include files
 
 These files are included in the efm32gg990f1024.h device file.

@@ -6,6 +6,8 @@
  * @author  Hans
  */
 
+#include <stdint.h>
+
 /**
  *  @brief  Indexes for channel strutures. Also used as channel identificator
  */
@@ -179,17 +181,26 @@ int  DMA_Init(void);
 void DMA_DeInit(void);
 void DMA_Reset(void);
 
-int  DMA_SetupTransferMemToMem_8(int ch, uint8_t *src, uint8_t *dst, uint32_t num);
-int  DMA_SetupTransferMemToMem_16(int ch, uint16_t *src, uint16_t *dst, uint32_t num);
-int  DMA_SetupTransferMemToMem_32(int ch, uint32_t *src, uint32_t *dst, uint32_t num);
+int  DMA_SetupTransferMemToMem_8(unsigned ch, uint8_t *src, uint8_t *dst, unsigned num);
+int  DMA_SetupTransferMemToMem_16(unsigned ch, uint16_t *src, uint16_t *dst, unsigned num);
+int  DMA_SetupTransferMemToMem_32(unsigned ch, uint32_t *src, uint32_t *dst, unsigned num);
 
-int  DMA_StartTransfer(int ch);
-int  DMA_StopTransfer(int ch);
+int  DMA_StartTransfer(unsigned ch);
+int  DMA_StopTransfer(unsigned ch);
 
 
 uint32_t DMA_GetDeviceState(void);
-uint32_t DMA_GetTransferStatus(int ch);
+uint32_t DMA_GetTransferStatus(unsigned ch);
+uint32_t DMA_GetTransferCount(unsigned ch);
 
-int  DMA_ConfigureDescriptor(int ch, uint32_t size, void *src, uint32_t srcinc, void *dst, uint32_t dstinc, uint32_t number);
+int  DMA_ConfigureDescriptor(unsigned ch, unsigned size, unsigned inc, void *src, void *dst, unsigned number);
 
+DMA_DESCRIPTOR_TypeDef *GetPrimaryDescriptor(unsigned ch);
+DMA_DESCRIPTOR_TypeDef *GetAlternateDescriptor(unsigned ch);
+DMA_DESCRIPTOR_TypeDef *GetDescriptor(unsigned ch);
+
+
+extern uint32_t enabled_channels;
+extern uint32_t done_channels;
+extern uint32_t error_channels;
 #endif /* DMA_H */

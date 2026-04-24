@@ -1,23 +1,23 @@
 /**
- * @file    dma.c
+ *  @file    dma.c
  *
- * @brief   Controls the DMA device (ARM )PL230 uDMA)
+ *  @brief   Controls the DMA device (ARM )PL230 uDMA)
  *
- * @note    A uniform channel number is used. Primary channels are numbered 0 
- *          to 15 and alternate channels 16 to 31. Both are limited by the 
- *          actual number of channels available.
+ *  @note    A uniform channel number is used. Primary channels are numbered 0
+ *           to 15 and alternate channels 16 to 31. Both are limited by the
+ *           actual number of channels available.
  *
- * @note    The EFM32GG uses a PL230 uDMA controller, developed and licensed 
- *          by ARM. It support 12 primary channels and 12 alternate channels.
+ *  @note    The EFM32GG uses a PL230 uDMA controller, developed and licensed
+ *           by ARM. It support 12 primary channels and 12 alternate channels.
  *
- *          A smaller number of channels can be configured reducing the demand 
- *          of RAM by setting the following compilation symbols
- *          DMA_NUMPRIMARYCHANNELS:   Must be at most 12 for the EFM32GG
- *          DMA_NUMALTERNATECHANNELS: Can be set to zero if no alternate 
- *                                    channels are used.
- *                                    Otherwise limited to 12 for the EFM32GG
+ *           A smaller number of channels can be configured reducing the demand
+ *           of RAM by setting the following compilation symbols
+ *           DMA_NUMPRIMARYCHANNELS:   Must be at most 12 for the EFM32GG
+ *           DMA_NUMALTERNATECHANNELS: Can be set to zero if no alternate
+ *                                     channels are used.
+ *                                     Otherwise limited to 12 for the EFM32GG
  *
- * @note    DMA source (SOURCESEL)
+ *  @note    DMA source (SOURCESEL)
  *
  * |   Value    | Mode      | Description                                    |
  * |------------|---------- |------------------------------------------------|
@@ -42,7 +42,7 @@
  * |  0b110010  |  LESENSE  | Low Energy Sensor Interface                    |
  * |  0b110011  |  EBI      | External Bus Interface                         |
  *
- * @note  Signal Selection (SIGSEL)
+ *  @note  Signal Selection (SIGSEL)
  *
  *  | SOURCESEL | VALUE  | Register                        |
  *  |-----------|--------|---------------------------------|
@@ -110,13 +110,14 @@
  *
  *
  *
- * @author  Hans
+ *  @author  Hans
  *
- * @version 1.0
+ *  @version 1.0
  *
- * @date    16/04/2026
+ *  @date    16/04/2026
  */
 
+#include <stdint.h>
 #include "em_device.h"
 #include "dma.h"
 
@@ -143,7 +144,7 @@
 
 
 /**
- *  @brief  This is a bit mask with the bit set for an existing channel 
+ *  @brief  This is a bit mask with the bit set for an existing channel
  *
  *  @note   It uses DMA_CHAN_COUNT defined in the device header file
  *
@@ -151,81 +152,37 @@
  */
 #define CHMASK                                 ((1<<DMA_CHAN_COUNT)-1)
 
-/**
- *  @brief  Managing error signaling
- *
- *  @note   See 8.4.2.4 Error signaling in the Reference Manual
- *
- *  @note   The program running on the host processor must always keep a 
- *          record of which channels have recently asserted their dma_done[ ]
- *          outputs. It must compare the disabled channels list from step 1
- *          (p. 61) , with the record of the channels that
- *          have recently set their dma_done[ ] outputs. The channel with no 
- *          record of dma_done[C] being set is the channel that the ERROR 
- *          occurred on.
- *
- *  @note   These are bit-mapped with channel 0 in the bit 0 (LSB)
- *
- *  @note   The bits in *enabled channels* are set in the StartTransfer and
- *          cleared in the IRQ processing
- *
- *  @note   The bits in *done channels* are set in the IRQ processing and 
- *          cleared in the StartTransfer
- *
- *  @note   The bits in *error_channels* are set in the IRQ processing and
- *          
- */
-static uint32_t enabled_channels = 0;
-static uint32_t done_channels    = 0;
-static uint32_t error_channels   = 0;
+
 
 /**
- * @brief  Pointer to callback routine
+ *  @brief  Handling of channel numbers
+ *
+ *  @note   In order to avoid separate functions for primary channels and
+ *          alternative channels a number scheme is used.
+ *  @note   Channel numbers from 0 to 15 refer to primary channels
+ *          Channel numbers from 16 to 31 refer to alternate channels.
+ *
+ *  @note   This is exactly then index number used for a channel in the Descriptor Table
  *
  */
-
-static void (*DMA_CallbackFunction)(uint32_t errors, uint32_t done) = 0;
-
-/*
- *  @brief  Clear Channel state variables 
- */
-static inline void ClearChannelState(uint32_t chmask) {
-
-    enabled_channels &= ~(chmask);
-    error_channels   &= ~(chmask);
-    done_channels    &= ~(chmask);
-}
-
-/*
- *  @brief  Clear Channel state variables 
- */
-static inline void ClearChannelStateAll(void) {
-
-    enabled_channels = 0;
-    error_channels   = 0;
-    done_channels    = 0;
-}
-
-/*
- *  @brief  Set channel state to start DMA 
- */
-static inline void SetChannelState(uint32_t chmask) {
-
-    enabled_channels |= chmask;
-    error_channels   &= ~(chmask);
-    done_channels    &= ~(chmask);
-}
+///@{
+static inline int GetPrimaryChannelNumber(unsigned ch)   { return ch&0xF; }
+static inline int GetAlternateChannelNumber(unsigned ch) { return ((ch&0xF))|0x10; }
+static inline int IsAlternateChannel(unsigned ch)        { return ch&0x10; }
+static inline int IsPrimaryChannel(unsigned ch)          { return !(ch&0x10); }
+static inline uint32_t GenerateChannelMask(unsigned ch)  { return (1U<<(ch&0xF)); }
+///@}
 
 /**
- * @brief Area for DMA Descriptors
+ *  @brief Area for DMA Descriptors
  *
- * @note  The number of channels is configurable
+ *  @note  The number of channels is configurable
  *
- * @note  DMA_NUMPRIMARYCHANNELS must be less or equal to DMA_CHAN_COUNT
- * @note  DMA_NUMALTERNATECHANNELS must be less or equal to DMA_CHAN_COUNT
+ *  @note  DMA_NUMPRIMARYCHANNELS must be less or equal to DMA_CHAN_COUNT
+ *  @note  DMA_NUMALTERNATECHANNELS must be less or equal to DMA_CHAN_COUNT
  *
- * @note  DMA_DESCRIPTOR_TypeDef is defined in efm32gg_dma_descriptor.h
- *        
+ *  @note  DMA_DESCRIPTOR_TypeDef is defined in efm32gg_dma_descriptor.h
+ *
  */
 ///@{
 #if DMA_NUMALTERNATECHANNELS > 0
@@ -236,95 +193,180 @@ static __attribute__((aligned (256)))  DMA_DESCRIPTOR_TypeDef
     DMA_DescriptorTable[DMA_NUMPRIMARYCHANNELS];
 #endif
 
-static inline DMA_DESCRIPTOR_TypeDef *GetPrimaryDescriptor(int ch) {
+// static inline
+DMA_DESCRIPTOR_TypeDef *GetDescriptor(unsigned ch) {
+    return &DMA_DescriptorTable[ch];
 
-    return &DMA_DescriptorTable[ch&0xF];
-#if 0
-    // After initialization,
-    return (DMA_DESCRIPTOR_TypeDef *) DMA->DMA_CTRLBASE + (ch&0xF)
-#endif
+    // Alternative. But it will work only after initialization,
+    // return (DMA_DESCRIPTOR_TypeDef *) DMA->DMA_CTRLBASE + (ch)
 }
 
-static inline DMA_DESCRIPTOR_TypeDef *GetAlternateDescriptor(int ch) {
+// static inline
+DMA_DESCRIPTOR_TypeDef *GetPrimaryDescriptor(unsigned ch) {
+    return &DMA_DescriptorTable[ch&0xF];
+
+    // Alternative. But it will work only after initialization,
+    // return (DMA_DESCRIPTOR_TypeDef *) DMA->DMA_CTRLBASE + (ch&0xF)
+}
+
+// static inline
+DMA_DESCRIPTOR_TypeDef *GetAlternateDescriptor(unsigned ch) {
 
     return &DMA_DescriptorTable[(ch&0xF)+16];
-#if 0
-    // After initialization,
-    return (DMA_DESCRIPTOR_TypeDef *) DMA->DMA_ALTCTRLBASE + (ch&0xF)
-#endif
+
+    // Alternative. But it will work only after initialization,
+    // return (DMA_DESCRIPTOR_TypeDef *) DMA->DMA_ALTCTRLBASE + (ch&0xF)
 }
 ///@}
 
-
 /**
- *  @brief  Handling of channel numbers
+ *  @brief  Managing error signaling
  *
- *  @note   In order to avoid separate functions for primary channels and 
- *          alternative channels a number scheme is used.
- *  @note   Channel numbers from 0 to 15 refer to primary channels
- *          Channel numbers from 16 to 31 refer to alternate channels.
+ *  @note   See 8.4.2.4 Error signaling in the Reference Manual
  *
- *  @note   This is exactly then index number used for a channel in the Descriptor Table
+ *  @note   The program running on the host processor must always keep a
+ *          record of which channels have recently asserted their dma_done[ ]
+ *          outputs. It must compare the disabled channels list from step 1
+ *          (p. 61) , with the record of the channels that
+ *          have recently set their dma_done[ ] outputs. The channel with no
+ *          record of dma_done[C] being set is the channel that the ERROR
+ *          occurred on.
+ *
+ *  @note   These are bit-mapped with channel 0 in the bit 0 (LSB)
+ *
+ *  @note   The bits in *enabled channels* are set in the StartTransfer and
+ *          cleared in the IRQ processing
+ *
+ *  @note   The bits in *done channels* are set in the IRQ processing and
+ *          cleared in the StartTransfer
+ *
+ *  @note   The bits in *error_channels* are set in the IRQ processing and
  *
  */
-///@{
-static inline int GetPrimaryChannelNumber(int ch) { return ch&0xF; }
-static inline int GetAlternateChannelNumber(int ch) { return ((ch&0xF))|0x10; }
-static inline int IsAlternateChannel(int ch) { return ch&0x10; }
-static inline int IsPrimaryChannel(int ch)   { return !(ch&0x10); }
-static inline unsigned GenChannelMask(int ch) { return (1<<(ch&0xF)); }
-///@}
+//static
+uint32_t enabled_channels = 0;
+//static
+uint32_t done_channels    = 0;
+//static
+uint32_t error_channels   = 0;
+
+/**
+ *  @brief  Pointer to callback routine
+ *
+ */
+
+static void (*DMA_CallbackFunction)(uint32_t errors, uint32_t done) = 0;
 
 
+/*
+ *  @brief  Clear Channel state variables
+ */
+static inline void ClearChannelsStates(unsigned chmask) {
 
+    enabled_channels &= ~(chmask);
+    error_channels   &= ~(chmask);
+    done_channels    &= ~(chmask);
+}
+
+/*
+ *  @brief  Clear Channel state variables
+ */
+static inline void ClearChannelState(unsigned ch) {
+uint32_t chmask = GenerateChannelMask(ch);
+
+    enabled_channels &= ~(chmask);
+    error_channels   &= ~(chmask);
+    done_channels    &= ~(chmask);
+}
+
+/*
+ *  @brief  Clear Channel state variables
+ */
+static inline void ClearChannelsStatesAll(void) {
+
+    enabled_channels = 0;
+    error_channels   = 0;
+    done_channels    = 0;
+}
+
+/*
+ *  @brief  Set channel state to start DMA
+ */
+static inline void SetChannelsStates(unsigned chmask) {
+
+    enabled_channels |= chmask;
+    error_channels   &= ~(chmask);
+    done_channels    &= ~(chmask);
+}
+
+/*
+ *  @brief  Set channel state to start DMA
+ */
+static inline void SetChannelState(unsigned ch) {
+uint32_t chmask = GenerateChannelMask(ch);
+
+    enabled_channels |= chmask;
+    error_channels   &= ~(chmask);
+    done_channels    &= ~(chmask);
+}
+
+/*
+ *  @brief  Set channel state to start DMA
+ */
+static inline void SetChannelsStatesAll(void) {
+uint32_t chmask = CHMASK;
+
+    enabled_channels |= chmask;
+    error_channels   &= ~(chmask);
+    done_channels    &= ~(chmask);
+}
 
 /**
  *  @brief  Interrupt routine for DMA
  *
- * From RM: 
- * >> If the controller detects an ERROR response on the AHB-Lite master 
+ * From RM:
+ * >> If the controller detects an ERROR response on the AHB-Lite master
  * >> interface, it:
  * >>         * disables the channel that corresponds to the ERROR
  * >>         * sets dma_err HIGH.
- * >> After the host processor detects that dma_err is HIGH, it must check which 
+ * >> After the host processor detects that dma_err is HIGH, it must check which
  * >> channel was active when the ERROR occurred. It can do this by:
  * >> 1. Reading the DMA_CHENS register to create a list of disabled channels.
- * >>    When a channel asserts dma_done[ ] then the controller disables the 
- * >>    channel. The program running on the host processor must always keep a 
- * >>    record of which channels have recently asserted their 
+ * >>    When a channel asserts dma_done[ ] then the controller disables the
+ * >>    channel. The program running on the host processor must always keep a
+ * >>    record of which channels have recently asserted their
  * >>    dma_done[ ] outputs.
- * >> 2. It must compare the disabled channels list from step 1 (p. 61) , with 
- * >>    the record of the channels that have recently set their 
+ * >> 2. It must compare the disabled channels list from step 1 (p. 61) , with
+ * >>    the record of the channels that have recently set their
  * >>    dma_done[ ] outputs. The channel with no record of dma_done[C] being
  * >>    set is the channel that the ERROR occurred on.
- * >> 
+ * >>
  */
 
 void DMA_IRQHandler(void) {
 
-
     uint32_t intflags = DMA->IF;            // Get all done channels
     uint32_t done = intflags&CHMASK;        // Only the done flags
     uint32_t nowenabled = DMA->CHENS;       // Get all channels that are active NOW
-    
+
     if( (intflags&DMA_IF_ERR) != 0 ) {
         // Clear Error register
         DMA->ERRORC = DMA_ERRORC_ERRORC;
         // What else?
         // What happens to the ongoing operations?
     }
-    
+
     /*
      * When a channel is enabled but it is not enabled any longer and
      * it is not done
      */
     error_channels = (enabled_channels&~nowenabled)&~done;
-    
+
     /*
      * Store done information
      */
     done_channels |= done;
-    
+
     /*
      * Clear interrupt and update enabled channels info
      */
@@ -341,11 +383,8 @@ void DMA_IRQHandler(void) {
 }
 
 
-
-
 /**
- * @brief  Disable IRQ for the  DMA device
- *
+ *  @brief  Disable IRQ for the  DMA device
  */
 
 void DMA_DisableIRQ(void) {
@@ -358,7 +397,7 @@ void DMA_DisableIRQ(void) {
 
 
 /**
- * @brief  Enable Interrupt from DMA
+ *  @brief  Enable Interrupt from DMA
  *
  */
 
@@ -383,9 +422,8 @@ void DMA_EnableIRQ(void) {
 void DMA_DeInit(void) {
 
     DMA_Reset();
-    
+
     CMU->HFCORECLKEN0 &= ~CMU_HFCORECLKEN0_DMA;
-    CMU->HFPERCLKDIV  &= ~CMU_HFPERCLKDIV_HFPERCLKEN;
 
 }
 
@@ -426,15 +464,15 @@ void DMA_Reset(void) {
     }
 
     // State channel variable are used to detect error
-    ClearChannelStateAll();
+    ClearChannelsStatesAll();
 
     return;
 }
 
 /**
- * @brief DMA_Init
+ *  @brief DMA_Init
  *
- * @note  Initialize the DMA device
+ *  @note  Initialize the DMA device
  */
 int DMA_Init(void) {
 
@@ -442,11 +480,11 @@ int DMA_Init(void) {
     CMU->HFPERCLKDIV  |= CMU_HFPERCLKDIV_HFPERCLKEN;
     CMU->HFCORECLKEN0 |= CMU_HFCORECLKEN0_DMA;
 
-    // Set device to default
-    DMA_Reset();
-
     // Disable DMA IRQ
     DMA_DisableIRQ();
+
+    // Set device to default
+    DMA_Reset();
 
     // Initialize DMA Descriptor. Most important is the CTRL word, specifically
     // the cycle field
@@ -466,114 +504,118 @@ const int indexmax = DMA_NUMPRIMARYCHANNELS;
 
     DMA->CTRLBASE = (uint32_t) DMA_DescriptorTable;
 
-    // Enable device
-    DMA->CONFIG |= DMA_CONFIG_EN;
-    
-    // Clear channel state variables (already done in DMA_Reset) 
-    ClearChannelStateAll();
+    // Enable device. It is a write only register
+    DMA->CONFIG = DMA_CONFIG_EN;
+
+    // Clear channel state variables (already done in DMA_Reset)
+    ClearChannelsStatesAll();
+
+    return 0;
 }
 
 /**
- * @brief  Enable Channel with number *ch*
+ *  @brief  Enable Channel with number *ch*
  *
- * @note   Enable the channel effectivally starting the DMA transfer
+ *  @note   Enable the channel effectivally starting the DMA transfer
  */
 
 void DMA_EnableChannel(unsigned ch) {
-uint32_t chmask = (1UL<<ch);
+uint32_t chmask = GenerateChannelMask(ch);
 
-    DMA->CHENS = chmask;
     SetChannelState(chmask);
-    
+    if ( IsPrimaryChannel(ch) ) {
+        DMA->CHENS = chmask;
+    } else {
+        DMA->CHALTS = chmask;
+    }
+
+
     return;
-}  
+}
 
 /**
- * @brief  Enable Channels according a bit mask
+ *  @brief  Enable Channels according a bit mask
  *
- * @note   Long description of function
- *
+ *  @note   Long description of function
  */
 
 void DMA_EnableChannels(unsigned chmask) {
 
     DMA->CHENS = chmask;
     SetChannelState(chmask);
-    
+
     return;
 }
 
 /**
- * @brief  Disable Channel with number *ch*
+ *  @brief  Disable Channel with number *ch*
  *
- * @note   According 8.2.4, *he program running on the host processor 
+ *  @note   According 8.2.4, *he program running on the host processor
  *         must always keep a record of which channels have recently asserted
  *         their dma_done[ ] outputs.*
  */
 
 void DMA_DisableChannel(unsigned ch) {
-uint32_t chmask = (1UL<<ch);
+uint32_t chmask = GenerateChannelMask(ch);
 
-    DMA->CHENC = chmask;
+    if ( IsPrimaryChannel(ch) ) {
+        DMA->CHENC = chmask;
+    } else {
+        DMA->CHALTC = chmask;
+    }
+
     ClearChannelState(chmask);
-    
+
     return;
 }
 
 /**
- * @brief  Disable Channels corresponding to 1s in the chmask
+ *  @brief  Disable Channels corresponding to 1s in the chmask
  *
- * @note   According 8.2.4, *he program running
- *         on the host processor must always keep a record of which channels
- *         have recently asserted their dma_done[ ] outputs.*
+ *  @note   According 8.2.4, *he program running
+ *          on the host processor must always keep a record of which channels
+ *          have recently asserted their dma_done[ ] outputs.*
  */
 
 void DMA_DisableChannels(unsigned chmask) {
 
     DMA->CHENC = chmask;
     ClearChannelState(chmask);
-    
+
     return;
 }
 
 
 /**
- * @brief  Select Alternate Channel with number n
-
- * @note   Long description of function
+ *  @brief  Select Alternate Channel with number n
  *
+ *  @note   Long description of function
  */
 
-void DMA_SelectAlternateDescriptor(int ch) {
+void DMA_SelectAlternateDescriptor(unsigned ch) {
 
-    int pch = GetPrimaryChannelNumber(ch);
-
-    DMA->CHENC = (1<<pch);
+    DMA->CHALTS = GenerateChannelMask(ch);
     return;
 }
 
-/**
- * @brief  Deselect Alternate Channel with number n
 
- * @note   Long description of function
+/**
+ *  @brief  Deselect Alternate Channel with number n
  *
+ *  @note   Long description of function
  */
 
-void DMA_DeselectAlternateDescriptor(int ch) {
+void DMA_DeselectAlternateDescriptor(unsigned ch) {
 
-    int pch = GetPrimaryChannelNumber(ch);
-
-    DMA->CHALTC = (1<<pch);
+    DMA->CHALTC = GenerateChannelMask(ch);
     return;
 }
 
 
-
 /**
- * @brief  Get State of DMA device
-
- * @note   Get the state of the DMA device.
+ *  @brief  Get State of DMA device
  *
+ *  @note   Get the state of the DMA device.
  */
 
 uint32_t DMA_GetDeviceState(void) {
@@ -584,123 +626,119 @@ uint32_t DMA_GetDeviceState(void) {
 
 
 /**
- * @brief  Get Transfer Status
+ *  @brief  Get Transfer Count of a specific channel
  *
- * @note   Get the status of the transfer in a specified channel
- *
- * @note   The Cycle field is set to 0 by the DMA, after completing the transfer
- *
- *
+ *  @note  It changes during the transfer until it reaches 0
  */
 
-uint32_t DMA_GetTransferStatus(int ch) {
+uint32_t DMA_GetTransferCount(unsigned ch) {
 DMA_DESCRIPTOR_TypeDef *pDesc = &DMA_DescriptorTable[ch];
 
-    return (pDesc->CTRL&_DMA_CTRL_CYCLE_CTRL_MASK)>>_DMA_CTRL_CYCLE_CTRL_SHIFT;
-
+    return (pDesc->CTRL&_DMA_CTRL_N_MINUS_1_MASK)>>_DMA_CTRL_N_MINUS_1_SHIFT;
 }
 
 
 /**
- * @brief  Configure Channel for Memory to Memory transfer for 8-bit data
-
- * @note   Long description of function
+ *  @brief  Get Transfer Status
  *
+ *  @note   Get the status of the transfer in a specified channel
+ *
+ *  @note   The Cycle field is set to 0 by the DMA, after completing the transfer
+ *
+ *  @note   The channel bit in CHENS is cleared when done
  */
 
-int DMA_SetupTransferMemToMem_8(int ch, uint8_t *src, uint8_t *dst, uint32_t num) {
+uint32_t DMA_GetTransferStatus(unsigned ch) {
+//DMA_DESCRIPTOR_TypeDef *pDesc = &DMA_DescriptorTable[ch];
+//    return (pDesc->CTRL&_DMA_CTRL_CYCLE_CTRL_MASK)>>_DMA_CTRL_CYCLE_CTRL_SHIFT;
+    return DMA->CHENS&GenerateChannelMask(ch);
+}
 
-    int rc = DMA_ConfigureDescriptor(ch, 8, src, 1, dst, 1, num);
+
+/**
+ *  @brief  Configure Channel for Memory to Memory transfer for 8-bit data
+ *
+ *  @note   Long description of function
+ */
+
+int DMA_SetupTransferMemToMem_8(unsigned ch, uint8_t *src, uint8_t *dst, unsigned num) {
+
+    int rc = DMA_ConfigureDescriptor(ch, 8, 1, src, dst, num);
 
     return rc;
 }
 
 
 /**
- * @brief  Configure Channel for Memory to Memory transfer for 16-bit data
-
- * @note   Long description of function
+ *  @brief  Configure Channel for Memory to Memory transfer for 16-bit data
  *
+ *  @note   Long description of function
  */
-int DMA_SetupTransferMemToMem_16(int ch, uint16_t *src, uint16_t *dst, uint32_t num) {
+int DMA_SetupTransferMemToMem_16(unsigned ch, uint16_t *src, uint16_t *dst, unsigned num) {
 
-    int rc = DMA_ConfigureDescriptor(ch, 16, src, 2, dst, 2, num);
+    int rc = DMA_ConfigureDescriptor(ch, 16, 2, src, dst, num);
 
     return rc;
 }
 
 
-
 /**
- * @brief  Configure Channel for Memory to Memory transfer for 32-bit data
-
- * @note   Long description of function
+ *  @brief  Configure Channel for Memory to Memory transfer for 32-bit data
  *
+ *  @note   Long description of function
  */
-int DMA_SetupTransferMemToMem_32(int ch, uint32_t *src, uint32_t *dst, uint32_t num) {
+int DMA_SetupTransferMemToMem_32(unsigned ch, uint32_t *src, uint32_t *dst, unsigned num) {
 
-    int rc = DMA_ConfigureDescriptor(ch, 32, src, 4, dst, 4, num);
+    int rc = DMA_ConfigureDescriptor(ch, 32, 4, src, dst, num);
 
     return rc;
 }
 
 /**
- * @brief  Configure Descriptor
- *
- *
+ *  @brief  Start Transfer in channel *ch*
  */
-int DMA_StartTransfer(int ch) {
+int DMA_StartTransfer(unsigned ch) {
 DMA_DESCRIPTOR_TypeDef *pDesc = &DMA_DescriptorTable[ch];
 
-// For now only auto
-const uint32_t cycle = DMA_CTRL_CYCLE_CTRL_AUTO;
+    uint32_t chmask = GenerateChannelMask(ch);
 
-    int pch = GetPrimaryChannelNumber(ch);
-    uint32_t chmask = (1<<pch);
-
-    if( (pDesc->CTRL&_DMA_CTRL_CYCLE_CTRL_MASK) != DMA_CTRL_CYCLE_CTRL_INVALID )
-        return -1; // Already started
-
-    pDesc->CTRL = (pDesc->CTRL&~_DMA_CTRL_CYCLE_CTRL_MASK)|cycle;
-
-    // Enable channel if it not yet enabled
-
-    if ( IsPrimaryChannel(ch) ) {
-        DMA->CHENS = chmask;
-    } else {
-        DMA->CHALTS = chmask;
-    }
-    
-    // Only for Auto
-    DMA->CHSWREQ = chmask;
-    
     // Clear state variables
     ClearChannelState(chmask);
-    
+
+    // Enable channel
+    DMA_EnableChannel(ch);
+
+    // Enable Interrupt from DMA controller
+    DMA_EnableIRQ();
+
+    // Only for Auto
+    //DMA->CHSWREQ = chmask;
+   // DMA->CHENS = (1U<<ch);
+    DMA->CHSWREQ = (1U<<ch);
+
     return 0;
 }
+
+
 /**
- * @brief  Stop transfer
- *
+ *  @brief  Stop transfer in channel *ch*
  */
-int DMA_StopTransfer(int ch) {
+int DMA_StopTransfer(unsigned ch) {
 DMA_DESCRIPTOR_TypeDef *pDesc = &DMA_DescriptorTable[ch];
-const uint32_t cycle = DMA_CTRL_CYCLE_CTRL_AUTO;
-
-
 
     if( (pDesc->CTRL&_DMA_CTRL_CYCLE_CTRL_MASK) != DMA_CTRL_CYCLE_CTRL_INVALID ) {
-        pDesc->CTRL = (pDesc->CTRL&~_DMA_CTRL_CYCLE_CTRL_MASK)|DMA_CTRL_CYCLE_CTRL_INVALID;
+        pDesc->CTRL =  (pDesc->CTRL&~_DMA_CTRL_CYCLE_CTRL_MASK)
+                      |DMA_CTRL_CYCLE_CTRL_INVALID;
     }
 
-    uint32_t chmask = (1UL<<ch);
+    uint32_t chmask = GenerateChannelMask(ch);
     // Enable channel if it not yet enabled
     if ( IsPrimaryChannel(ch) ) {
         chmask = (1UL<<ch);
         DMA->CHENC = chmask;
     } else {
         int ach = GetPrimaryChannelNumber(ch);
-        chmask = (1UL<<ch);
+        chmask = (1UL<<ach);
         DMA->CHALTC = chmask;
     }
 
@@ -711,28 +749,38 @@ const uint32_t cycle = DMA_CTRL_CYCLE_CTRL_AUTO;
 }
 
 /**
- * @brief  General routine to configure descriptor
+ *  @brief  General routine to configure descriptor
  *
+ *  @note   For now, only mem to mem. DMA from and to devices must set inc to 0b11
+ *          and adjust some other fields
  */
 
-int  DMA_ConfigureDescriptor(int ch, uint32_t size, void *src, uint32_t srcinc, void *dst, uint32_t dstinc, uint32_t number) {
+int  DMA_ConfigureDescriptor(unsigned ch, unsigned size, unsigned inc, void *src, void *dst, unsigned number) {
 uint32_t control;
 uint32_t sc;
+const uint32_t cycle = DMA_CTRL_CYCLE_CTRL_AUTO;
 
-
-    int ich = GetPrimaryChannelNumber(ch);
+    int pch = GetPrimaryChannelNumber(ch);
+    uint32_t srcinc;
+    uint32_t dstinc;
 
     // Get size code, that is used in the control element. Size in bytes is 1<<s;
-    if( size < 3 ) {
-        sc = size;
-    } else if ( size == 8 )
-        sc = 0x0;
-    else if ( size == 16 )
-        sc = 0x1;
-    else if ( size == 32 )
-        sc = 0x2;
-    else
+    // uint32_t sc;
+    if( size == 0 || size == 8 ) {
+        sc     = 0x0;
+        srcinc = 0x0;
+        dstinc = 0x0;
+    } else if ( size == 1 || size == 16 ) {
+        sc     = 0x1;
+        srcinc = 0x1;
+        dstinc = 0x1;
+    } else if ( size == 2 || size == 32 ) {
+        sc     = 0x2;
+        srcinc = 0x2;
+        dstinc = 0x2;
+    } else {
         return -1; // Invalid size
+    }
 
     unsigned nm1 = number - 1;
 
@@ -741,28 +789,28 @@ uint32_t sc;
         return -2;
     }
 
-    unsigned rpower = _DMA_CTRL_R_POWER_4; // Default!!!!
+    unsigned rpower = _DMA_CTRL_R_POWER_1; // At every access
 
-    // Calculate end addresses
-    uint8_t *srcend = (uint8_t *)src + nm1*size;
-    uint8_t *dstend = (uint8_t *)dst + nm1*size;
+    // Calculate end addresses. Using bytes
+    uint8_t *srcend = (uint8_t *)src + nm1;
+    uint8_t *dstend = (uint8_t *)dst + nm1;
 
-    uint32_t ctrl =  ((dstinc<<_DMA_CTRL_DST_INC_SHIFT)&_DMA_CTRL_DST_INC_MASK)
-                    |((size<<_DMA_CTRL_DST_SIZE_SHIFT)&_DMA_CTRL_DST_SIZE_MASK)
-                    |((srcinc<<_DMA_CTRL_SRC_INC_SHIFT)&_DMA_CTRL_SRC_INC_MASK)
-                    |((rpower<<_DMA_CTRL_R_POWER_SHIFT)&_DMA_CTRL_R_POWER_MASK)
-                    |((nm1<<_DMA_CTRL_N_MINUS_1_SHIFT)&_DMA_CTRL_N_MINUS_1_MASK);
+    uint32_t ctrl =   ((dstinc<<_DMA_CTRL_DST_INC_SHIFT)&_DMA_CTRL_DST_INC_MASK)
+                    | ((sc<<_DMA_CTRL_DST_SIZE_SHIFT)&_DMA_CTRL_DST_SIZE_MASK)
+                    | ((srcinc<<_DMA_CTRL_SRC_INC_SHIFT)&_DMA_CTRL_SRC_INC_MASK)
+                    | ((rpower<<_DMA_CTRL_R_POWER_SHIFT)&_DMA_CTRL_R_POWER_MASK)
+                    | ((nm1<<_DMA_CTRL_N_MINUS_1_SHIFT)&_DMA_CTRL_N_MINUS_1_MASK)
+                    | cycle;
 
     // Configure DMA Descriptor
-    DMA_DESCRIPTOR_TypeDef *pDesc = &DMA_DescriptorTable[ich];
+    DMA_DESCRIPTOR_TypeDef *pDesc = &DMA_DescriptorTable[ch];
     pDesc->SRCEND = srcend;
     pDesc->DSTEND = dstend;
     pDesc->CTRL   = ctrl;
 
     // For now, only Memory to Memory
     // TODO: Other sources
-    DMA->CH[ich].CTRL = DMA_CH_CTRL_SOURCESEL_NONE; // DMA_CH_CTRL_SIGSEL_source
-
+    DMA->CH[pch].CTRL = DMA_CH_CTRL_SOURCESEL_NONE; // DMA_CH_CTRL_SIGSEL_source
 
     return 0;
 }
