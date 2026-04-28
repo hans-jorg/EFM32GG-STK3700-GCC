@@ -12,7 +12,7 @@
  * @author  Hans
  * @date    01/09/2018
  */
- 
+
 #include <stdint.h>
 /*
  * Including this file, it is possible to define which processor using command line
@@ -73,7 +73,7 @@ int main(void) {
     // Set clock source to external crystal: 48 MHz
     (void) SystemCoreClockSet(CLOCK_HFXO,1,1);
 
-    
+
     /* Configure Pins in GPIOE */
     LED_Init(LED1|LED2);
 
@@ -81,6 +81,6 @@ int main(void) {
     SysTick_Config(SystemCoreClock/SYSTICKDIVIDER);
 
     /* Blink loop */
-    while (1) {}
+    while (1) { __WFI(); }
 
 }

@@ -388,8 +388,10 @@ KDBGFLAGS=
 #
 # GUI Editor
 #
-GUIEDITOR=gedit --new-window
+#GUIEDITOR=gedit --new-window
 #GUIEDITOR=geany
+GUIEDITOR=zed .
+#GUIEDITOR=code .
 
 #
 # Doxygen

@@ -72,6 +72,7 @@ int main(void) {
     /* Blink loop */
     while (1) {
         Task_Dispatch();
+        __WFI();
     }
 
 }

@@ -142,18 +142,28 @@ void __attribute__((weak)) Default_Handler(void);
 extern void main(void);
 
 /*----------------------------------------------------------------------------
-  User Initial Stack & Heap
+  @note  User Initial Stack & Heap defined as variable. Useful for debug.
+         There must be .stack and .heap sections in the loader script
+         
+  @note  When STACK_AS_VARIABLE or STACK_AS_VARIABLE are not defined,
+            * StackTop is defined at the end of RAM region
+            * Heap  at the end of BSS section.
+              They they are defined in the loader script file
  *----------------------------------------------------------------------------*/
+#ifdef STACK_AS_VARIABLE
 #ifndef __STACK_SIZE
 #define __STACK_SIZE  0x00000400
 #endif
 static uint8_t stack[__STACK_SIZE] __attribute__ ((aligned(8), used, section(".stack")));
+#endif
 
+#ifdef HEAP_AS_VARIABLE
 #ifndef __HEAP_SIZE
 #define __HEAP_SIZE   0x00000C00
 #endif
 #if __HEAP_SIZE > 0
 static uint8_t heap[__HEAP_SIZE]   __attribute__ ((aligned(8), used, section(".heap")));
+#endif
 #endif
 
 

@@ -27,7 +27,7 @@
 /**
  * @brief standard delay is 1 sec
  */
-#define DELAYVAL 1000
+#define DELAYVAL 2000
 
 /**
  * @brief Tick counter
