@@ -2,11 +2,11 @@
  * @file nand-flash.c
  * @brief Interface routine for the NAND256-A Flash device in the EFM32GG-STK3700 board
  *
- * @note  The device is a NAND256W3A from ST Electronics.
+ * @note  The device isv either a NAND256W3A from ST Electronics or a Windbond W29N01HV.
  *
- * @note  THe most important characteristics are shown in the table below.
+ * @note  The most important characteristics are shown in the table below.
  *
- *  | Parameter              |  Value     | Unit  | Description                                  |
+ *  | Parameter              |  Value NAND256W3A     | Unit  | Description                                  |
  *  |------------------------|------------|-------|----------------------------------------------|
  *  | Memory size            |       256  | Mbit  |
  *  | Bus width              |         8  | bits  |
@@ -62,7 +62,6 @@
  *
  */
 
-
 #include <em_device.h>
 #include <stdint.h>
 #include "gpio.h"
@@ -74,12 +73,14 @@
 
 /**
  *  @brief  NAND Flash parameters
+ *
+ *  #note   All sizes in bytes
  */
-#define  NAND_SIZE              ()
+#define  NAND_SIZE              (33554432)
 #define  NAND_SPARESIZE         (16)
-#define  NAND_PAGESIZE          (512+16)
+#define  NAND_PAGESIZE          (512)
 #define  NAND_HALFPAGESIZE      (256)
-#define  NAND_MAXADDRESS        (0)
+#define  NAND_MAXADDRESS        (33554431)
 #define  NAND_BLOCKSIZE         (32)
 
 
@@ -87,9 +88,9 @@
  * @brief Pin Configuration for GPIO
  *
  * @note
- *        WP:  Write protect
- *        CE:
- *        RB:  Ready=0/Busy=0
+ *        WP:  Output. Write protect
+ *        CE:  Output. Chip enable
+ *        RB:  Ready=1/Busy=0
  *        PWR: Enable power to the nand device
  */
 ///@{
@@ -101,13 +102,13 @@
 #define CE_PINMASK                          BIT(14)
 #define CE_PINMODE                          GPIO_MODE_PUSHPULL
 
-#define RB_GPIO                             GPIOD
-#define RB_PINMASK                          BIT(15)
-#define RB_PINMODE                          GPIO_MODE_INPUT
-
 #define PWR_GPIO                            GPIOB
 #define PWR_PINMASK                         BIT(15)
 #define PWR_PINMODE                         GPIO_MODE_PUSHPULL
+
+#define RB_GPIO                             GPIOD
+#define RB_PINMASK                          BIT(15)
+#define RB_PINMODE                          GPIO_MODE_INPUT
 ///@}
 
 
@@ -155,22 +156,34 @@
 #define WR_STROBETIME                       (2)
 ///@}
 
+typedef struct {
+    uint8_t     n;
+    uint8_t    *v;
+} Command_TypeDef;
 
-/// NAND Flash commands
+const Command_TypeDef CommandList[] = {
+    {   1, (uint8_t []) {0x00} },              // Read A
+    {   1, (uint8_t []) {0x01} },              // Read B
+    {   1, (uint8_t []) {0x50} },              // Read C/Spare
+    {   1, (uint8_t []) {0x90} },              // Read Signature
+    {   1, (uint8_t []) {0x70} },              // Read Status
+    {   2, (uint8_t []) {0x80, 0x10} },        // Program
+    {   3, (uint8_t []) {0x00, 0x8A, 0x10} },  // Copy back
+    {   2, (uint8_t []) {0x60, 0xD0} },        // Block erase
+    {   1, (uint8_t []) {0xFF} },              // Reset
+};
+/// NAND Flash commands number
 ///@{
-#define CMD_READ_A                          (0x00)
-#define CMD_READ_B                          (0x01)
-#define CMD_READ_C                          (0x50)
-#define CMD_READ_SIGNATURE                  (0x90)
-#define CMD_READ_STATUS                     (0x70)
-#define CMD_PROGRAM_1                       (0x80)
-#define CMD_PROGRAM_2                       (0x10)
-#define CMD_COPY_BACK_1                     (0x00)
-#define CMD_COPY_BACK_2                     (0x8A)
-#define CMD_COPY_BACK_3                     (0x10)
-#define CMD_BLOCK_ERASE_1                   (0x60)
-#define CMD_BLOCK_ERASE_2                   (0xD0)
-#define CMD_RESET                           (0xFF)
+#define CMD_READ_A                          (0)
+#define CMD_READ_B                          (1)
+#define CMD_READ_C                          (2)
+#define CMD_READ_SIGNATURE                  (3)
+#define CMD_READ_STATUS                     (4)
+#define CMD_PROGRAM                         (5)
+#define CMD_COPY_BACK                       (6)
+#define CMD_BLOCK_ERASE                     (7)
+#define CMD_RESET                           (8)
+
 ///@}
 
 /**
@@ -195,9 +208,9 @@
  * @brief  Adresses used to access NAND Flash
  */
 ///@{
-static       uint8_t * const pntData     = (uint8_t *) 0x80000000;
-static       uint8_t * const pntAddress  = (uint8_t *) 0x81000000;
-static       uint8_t * const pntCommand  = (uint8_t *) 0x82000000;
+static       uint8_t *const pntData     = (uint8_t *) 0x80000000;
+static       uint8_t *const pntAddress  = (uint8_t *) 0x81000000;
+static       uint8_t *const pntCommand  = (uint8_t *) 0x82000000;
 // To make it easy to write to or read from NAND Flash
 #define NAND_DATA       *pntData
 #define NAND_ADDRESS    *pntData
@@ -245,6 +258,10 @@ static inline void EnableWriteProtect(void) {
 static inline void DisableWriteProtect(void) {
     GPIO_WritePins(WP_GPIO,  0, WP_PINMASK);            // Set to High due to the negative logic
 }
+
+static inline int  IsBusy(void) {
+    return GPIO_ReadPins(RB_GPIO)&RB_PINMASK;
+}
 ///@}
 
 /**
@@ -264,15 +281,20 @@ static inline void EnableEBIClock(void) {
  */
 static inline void ConfigGPIOPins(void) {
 
+    GPIO_Init(WP_GPIO, 0, WP_PINMASK);
+    GPIO_Init(CE_GPIO, 0, CE_PINMASK);
+    GPIO_Init(PWR_GPIO, 0, PWR_PINMASK);
+    GPIO_Init(RB_GPIO, RB_PINMASK, 0);
+
     GPIO_ConfigPins(WP_GPIO, WP_PINMASK, WP_PINMODE);
     GPIO_ConfigPins(CE_GPIO,  CE_PINMASK,  CE_PINMODE);
     GPIO_ConfigPins(PWR_GPIO, PWR_PINMASK, PWR_PINMODE);
     GPIO_ConfigPins(RB_GPIO, RB_PINMASK, RB_PINMODE);
 
     // The default values for output pins
-    EnableWriteProtect();
     EnableNANDPower();
     EnableNANDDevice();
+    //EnableWriteProtect();
 }
 
 
@@ -338,7 +360,8 @@ void ConfigEBI(void) {
     // Write buffer should be enabled?
 
     // Start EBI NAND controller
-    EBI->NANDCTRL = (EBI->NANDCTRL&~(_EBI_NANDCTRL_BANKSEL_MASK|EBI_NANDCTRL_EN))
+    EBI->NANDCTRL =       (EBI->NANDCTRL
+                        &~(_EBI_NANDCTRL_BANKSEL_MASK|EBI_NANDCTRL_EN))
                      |EBI_NANDCTRL_BANKSEL_BANK0
                      |EBI_NANDCTRL_EN;
 
@@ -389,11 +412,10 @@ Copyback(int param) {
  *
  *  @note   The input word consists of 16 pairs of complementary bit.
  *
- *    | P32768 | P32768' | P16384 |  P16384' | ...| P4 | P4' | P2 | P2' | P1 | P1' |
+ *  P32768  P32768'  P16384  P16384'  ... P4  P4'  P2  P2'  P1  P1'
  *
  *  @note
- *          When the pair is not complementary, it indicates that an error or multiples errors
- *          occurred.
+ *      When the pair is not complementary, it indicates that an error *        *      multiples errors occurred.
  *
  *  @note
  *         |  Data size  |    ECC bits    |
@@ -489,7 +511,6 @@ int NAND_Init(void) {
 
     ConfigGPIOPins();
     ConfigEBIPins();
-
     ConfigEBI();
 
     EnableNANDPower();
@@ -509,6 +530,7 @@ int NAND_Init(void) {
 int NAND_WritePage(uint32_t pageaddr, uint8_t *data) {
 
     DisableWriteProtect();
+    // TODO
     EnableWriteProtect();
 
     return 0;
@@ -516,13 +538,40 @@ int NAND_WritePage(uint32_t pageaddr, uint8_t *data) {
 
 
 /**
- * @/**
   * @brief   NAND_ReadPage
   *
   * @note    Read a page (512 bytes from NAND device
   */
 int NAND_ReadPage(uint32_t pageaddr, uint8_t *data) {
 
-
+    // TODO
     return 0;
+}
+
+/**
+  * @brief   NAND_WriteSpare
+  *
+  * @note    Write a 16 bytes onto NAND device
+  */
+int NAND_WriteSpare(uint32_t pageaddr, uint8_t *data);
+
+/**
+  * @brief   NAND_ReadSpare
+  *
+  * @note    Read a 16 byte from NAND device
+  */
+int NAND_ReadSpare(uint32_t pageaddr, uint8_t *data);
+
+
+/**
+ *  @brief  Send Command
+ */
+static int
+SendCommand(int idx) {
+    for(int i=0;i<CommandList[idx].n;i++) {
+        NAND_COMMAND = CommandList[idx].v[i];
+    }
+    int timeout = TIMEOUT;
+    while ( timeout-- && !NAND_Ready() ) {}
+    return !timeout; // 1 if OK
 }

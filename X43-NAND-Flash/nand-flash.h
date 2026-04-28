@@ -26,14 +26,18 @@
 #define NAND_PAGECOUNT                          (NAND_CAPACITY/NAND_PAGESIZE)
 #define NAND_PAGEADDRMASK                       ((NAND_PAGECOUNT-1)<<9)
 
-
-
-
+#define NAND_TIMEOUT                            (1000)
 
 int NAND_Init(void);
+uint32_t NAND_Status(void);
+int NAND_Ready(void);
+
+int NAND_WriteFullPage(uint32_t pageaddr, uint8_t *data);
+int NAND_ReadFullPage(uint32_t pageaddr, uint8_t *data);
 int NAND_WritePage(uint32_t pageaddr, uint8_t *data);
 int NAND_ReadPage(uint32_t pageaddr, uint8_t *data);
-
+int NAND_WriteSpare(uint32_t pageaddr, uint8_t *data);
+int NAND_ReadSpare(uint32_t pageaddr, uint8_t *data);
 int NAND_EnableWriteProtect(void);
 int NAND_DisableWriteProtect(void);
 

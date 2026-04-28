@@ -22,27 +22,28 @@ the system must copy its contents to a new region and mark the region with error
 Summarizing.
 
 
-| Characteristic      |  NAND flash                          | NOR flash                           |
-|---------------------|--------------------------------------|-------------------------------------|
-| Storage density     | Higher                               | Lower                               |
-| Read performance    | Fast                                 | Fast*                               |
-| Write performance   | Faster                               | Slower*                             |
-| Erase performance   | Faster (low ms typically)            | Slower (possibly seconds)           |
-| Storage reliability | Lower (without management)           | Better                              |
-| Life span           | Higher                               | Lower                               |
-| Price               | Lower                                | Higher                              |
+| Characteristic      |  NAND flash                | NOR flash                 |
+|---------------------|----------------------------|---------------------------|
+| Storage density     | Higher                     | Lower                     |
+| Read performance    | Fast                       | Fast*                     |
+| Write performance   | Faster                     | Slower*                   |
+| Erase performance   | Faster (low ms typically)  | Slower (possibly seconds) |
+| Storage reliability | Lower (without management) | Better                    |
+| Life span           | Higher                     | Lower                     |
+| Price               | Lower                      | Higher                    |
 
 * May be slowed by serial access
 
 
-> One feature of Flash devices is that it is possible to change a bit 1 to a 0, but to change from
-0 to 1, an erase operation is needed.
+> One feature of Flash devices is that it is possible to change a bit 1 to a 0, but to change from 0 to 1, an erase operation is needed.
 
 On NAND Flash, the erase operation must be done on a large chunk of bits, generally called block.
 
+There are many categories of the NAND flash devices. An important category is 
+the classic one, with page size in the range 256 to 512 and modern ones, with page size in the range 1024 to 2048, or even larger.
+
 Middleware
 ----------
-
 
 So, the driver software for NAND devices must have:
 
@@ -59,28 +60,141 @@ There are some FREE middleware options for Flash devices:
 
 
 FatFS is media agnostic and is not suited for NAND devices since it does not
-have wear leveling and bad block management. FAT file systems were not conceived for storing data
-in devices like NAND flash devices. Another aspect is that the erase operations are done in a
-group of pages. To use FatFS, all these aspects must be considered in the low level firmware driver.
+have wear leveling and bad block management. FAT file systems were not conceived
+for storing data in devices like NAND flash devices. Another aspect is that the erase operations are done in a group of pages. To use FatFS, all these aspects must be considered in the low level firmware driver.
 
-LittleFS is a fail safe filesystem for microcontroller. It has dynamic wear leveling, power loss
-resilience, and has low demand on RAM and ROM.
+LittleFS is a fail safe filesystem for microcontroller. It has dynamic wear leveling, power loss resilience, and has low demand on RAM and ROM.
 
-SPIFFS is used on ESP32 devices. But is slow and has some significant problems. In some cases, it
-is beeing replaced by LittFS.
+SPIFFS is used on ESP32 devices. But is slow and has some significant problems. In some cases, it is beeing replaced by LittFS.
 
-YaFFs has two versions. The version 2 is faster, support devices with large pages. Both support
-wear leveling and bad block management.
+YaFFs has two versions. The version 2 is faster, support devices with large pages. Both support wear leveling and bad block management.
+
+
+
+Extended Bus Interface (EBI)
+----------------------------
+
+Suport to external devices in the EFM32 Giant Gecko family is done by the 
+Extended Bus Interface (EBI) peripheral. It enables an external device to appear in the memory map.
+
+The devices supported are:
+
+* RAM
+* Flash
+* TFT
+
+The support for NAND devices is partial. Their ports appears in the memory 
+space but the addressing inside the device must be done explicitely.
+
+The EBI handles the data and address pins, the read and write pins, the latch 
+signal pins and the acknowledge pins, including timing.
+
+The EBI support many data and addressing modes:
+
+* D8A8: 8-bin non-multiplexed data bus, 8-bit addressing mode
+* D16A16ALE: 16-bit multiplexed data and address mode
+* D8A24ALE: 8-bit multiplexed data, 24 bit addressing mode
+* D16: 16-bit non multiplexed data, N-bit addressing mode
+
+There are four memory regions used by the EBI.
+
+  * Region 0: 0x8000_0000-0x83FF_FFFF - 64 MByte
+  * Region 1: 0x8400_0000-0x87FF_FFFF - 64 MByte
+  * Region 2: 0x8800_0000-0x8BFF_FFFF - 64 MByte
+  * Region 3: 0x8C00_0000-0x8CFF_FFFF - 64 MByte
+
+  These regions are not cacheable. To run code, these regions can appear at the address ranges below
+  
+  * Region 0: 0x1200_0000-0x13FF_FFFF - 32 MByte
+  * Region 1: 0x1400_0000-0x15FF_FFFF - 32 MByte
+  * Region 2: 0x1600_0000-0x17FF_FFFF - 32 MByte
+  * Region 3: 0x1800_0000-0x1FFF_FFFF - 128 MByte
+
+  Alternatively, 
+  
+  * Region 0: 0x8000_0000-0x8FFF_FFFF - 256 MByte
+  * Region 1: 0x9000_0000-0x9FFF_FFFF - 256 MByte
+  * Region 2: 0xA000_0000-0xAFFF_FFFF - 256 MByte
+  * Region 3: 0xB000_0000-0xBFFF_FFFF - 256 MByte
+    
+The corresponding code regions are the same as above.
+
+Except for NAND Flash, the EDI can handle the Wait/Acknowledge pin of an external device. This is configured in the EBI_CTRL register.
+
+### NAND Flash Support
+
+It supports partially NAND Flash devices, because these devices do not have
+address pins. These device have generally 8 or 16-bin data bus. The Error 
+Correction Code can be generated/verified by the EBI.
+
+The typical connection is (14.3.14)
+
+    |---------------------|                        |-----------------------|
+    |                A25  |------------------------| ALE                   |
+    |                     |                        |                       |
+    |                A24  |------------------------| CLE                   |
+    |       EBI           |                        |       NAND            |
+    |                 RE  |------------------------| RE    Flash           |
+    |                     |                        |                       |
+    |                 WE  |------------------------| WE                    |
+    |                     |                        |                       |
+    |                     |                        |                       |
+    |                ADx  |------------------------| IOn                   |
+    |                     |                        |                       |
+    |               GPIO  |------------------------| WP                    |
+    |               GPIO  |------------------------| R/B                   |
+    |               GPIO  |------------------------| CE                    |
+    |---------------------|                        |-----------------------|
+
+Note:  
+1 - The R/B signal can be handled by the EBI. The remaining GPIO must be
+handled explicitly.
+2 - It is possible to the EBI to handle the Chip Select signal (connected to 
+the Chip Enable) of non standard NAND flash devices.
+
+The ARDY signal can not be used for NAND Flash because the bus access can be blocked for a large amount of time.
+
+The timing information is critical for the working of the EBI. This is 
+configured in the EBI_WRTIMINGn, EBI_RDTIMINGn and EBI_ADDRTIMINGn  registers. Additionally, there are also EBI_POLARITYn registers. The ITS bit in the 
+EBI_CTRL register is 0, the values in these register are used in all regions.
+If it is 1, these values are used only in Region 0. The other regions use 
+the values in EBI_WRTIMINGn, EBI_RDTIMINGn and EBI_ADDRTIMINGn, where n is 
+the number of the region.
+
+Their important fields for timing include:
+
+| Parameter  | Descripton                                                      |
+|------------|-----------------------------------------------------------------|
+|  ADDRHOLD  |Number of cycles the address setup before WEn is asserted.       |
+|  ADDRSETUP |Number of cycles the WEn is held active.                         |
+|  WRHOLD    |Number of cycles CSn is held active after the WEn is deassertede |
+|  WRSETUP   |Number of cycles the address setup before WEn is asserted.       |
+|  WRSTRB    |Number of cycles the WEn is held active.                         |
+|  RDHOLD    |Number of cycles CSn is held active after the REn is deasserted. |
+|  RDSETUP   |Number of cycles the address setup before REn is asserted.       |
+|  RDSTRB    |Number of cycles the REn is held active.                         |
+
+
 
 NAND Flash device
 -----------------
 
-### Introduction
+The EMF32GG-STK3700 depending on the board version has
+
+* an ST NAND256W3A with 8-bit parallel data interface with 256 Mb (=32 MBytes)
+* an Winbond W29N01HVDINA with 1 Mb (=128 MBytes).
+
+So both use an 8-bit parallel data interface.
+
+There are differences in capacity, page size and command formats.
+
+
+### ST NAND256W3A
 
 The ST NAND256W3A features the following:
 
 * 32 MBytes (=256 Mbits)
-* 538/264 Word Page = (=512+16/256+8). The non power of two size are due to the spare area (16/8).
+* 538/264 Word Page = (=512+16/256+8). The size is not a power of two size due to the spare area (16/8).
 * Multiplexed Data/Address lines with up to 16 bit width.
 * Support to over than 100.000 erases cycles.
 * 8-bit wide data path. Other devices of the family can have 16-bit wide data path.
@@ -97,8 +211,7 @@ The table below shows some important parameters of the NAND256
 | Data retention                  |        10   | years |
 
 
-### Organization
-
+#### Organization
 
 The memory array is organized as 2048 blocks, and each block has 32 pages. Each page is 528x8 large
 and is divided in three parts:
@@ -114,52 +227,191 @@ Bad Block identification or just to increase the storage area.
 > Read operations can be done on pages, but erase operations can only be done on blocks.
 
 
-### Electronic signature
+#### Electronic signature
 
 Manufacturer code:  0x20
 Device code:        0x75
 
 
-### Errors
+#### Errors
 
-
-The NAND Flash can have bad blocks already identified during manufacturing or can develop them
-during its lifetime.
+The NAND Flash can have bad blocks already identified during manufacturing or can develop them during its lifetime.
 
 A bad block(page?) does not contain an 0xFF (all ones) value in the 6th byte in the spare area.
 
 > ATTENTION: This value can be overwritten and get lost.
 
-
 The 256 Mbits device should have at least 2008 valid blocks from the 2048 total.
 
-The bad blocks can be managed using Bad Blocks Management, Block Replacement or Error Correction
-Code.
+The bad blocks can be managed using Bad Blocks Management, Block Replacement or Error Correction Code.
+
+## Addressing
+The addresses are input by an up to four bytes (bug generally, only three are used).
+
+|   Bus cycle   | IO7  | IO7  | IO5  | IO4  | IO3  | IO2  | IO1  | IO0  |
+|---------------|------|------|------|------|------|------|------|------|
+|    1st        | A7   | A6   | A5   | A4   | A3   | A2   | A1   | A0   |
+|    2nd        | A16  | A15  | A14  | A13  | A12  | A11  | A10  | A9   |
+|    3rd        | A24  | A23  | A22  | A21  | A20  | A19  | A18  | A17  |
+|    4th        |  -   |  -   |  -   |  -   |  -   |  -   | A26  | A25  |
+
+## Commands
+
+!!! The operation of a NAND Flash envolves getting the contents of a page into a page buffer (528x8),
+!!! exactly the same width of a page, update it and eventually write it back.!!!!!!
+
+The operation of the device is controlled by commands, generally a sequence of up to three bytes.
+
+| Command                  | 1st byte  | 2nd byte  | 3rd byte  |
+|--------------------------|-----------|-----------|-----------|
+| Read A (1st half page)   |  0x00     |    -      |    -      |
+| Read B (2nd half page)   |  0x01     |    -      |    -      |
+| Read C (Spare area)      |  0x50     |    -      |    -      |
+| Read Electronic Signature|  0x90     |    -      |    -      |
+| Read Status Register     |  0x70     |    -      |    -      |
+| Page Program             |  0x80     |  0x10     |    -      |
+| Copy Back Program        |  0x00     |  0x8A     |  0x10     |
+| Block Erase              |  0x60     |  0xD0     |    -      |
+| Reset                    |  0xFF     |    -      |    -      |
+
+
+
+> NOTE 1: A8 is set Low or High by the 0x00 or 0x01 command. It defines the half page to be read.
+
+> NOTE 2: The 4th byte is optional for device with 256 MBytes or less.
+
+
+The bit A8 of the address is used to specify which Area (A or B) to access. When 0, access is done
+starting at Area A. When 1, Area B. When reading the spare area, only address bit A3-A0 are used.
+Address bits A7-A4 are ignored.
+
+> The device defaults to Area A after power up or a reset.
+
+> The Read B command in only effective for one operation
+
 
 
 ### Summary
 
-|  Feature                |   Size     |  Unit   |
-|-------------------------|------------|---------|
-|  1st Half Page          |   256      |  Bytes  |
-|  2st Half Page          |   256      |  Bytes  |
-|  Spare area             |    16      |  Bytes  |
-| Without spare area      |            |         |
-|  Page                   |   512      |  Bytes  |
-|  Block                  |    32      |  Pages  |
-|  Block                  | 16384      |  Bytes  |
-|  Number of blocks       |  2048      |  Blocks |
-|  Maximum Capacity       | 33.554.432 |  Bytes  |
-|  Maximum Capacity       |268.435.456 |  bits   |
-|  Maximum Capacity       |   256      |  Kbits  |
-| Spare area as starage   |            |         |
-|  Page                   |   528      |  Bytes  |
-|  Block                  |    32      |  Pages  |
-|  Block                  | 16896      |  Bytes  |
-|  Number of blocks       |  2048      |  Blocks |
-|  Maximum Capacity       | 34.603.008 |  Bytes  |
-|  Maximum Capacity       |276.824.064 |  bits   |
-|  Maximum Capacity       |   270,336  |  Kbits  |
+|  Feature                |   Size      |  Unit   |
+|-------------------------|-------------|---------|
+|  1st Half Page          |         256 |  Bytes  |
+|  2st Half Page          |         256 |  Bytes  |
+|  Spare area             |          16 |  Bytes  |
+| *Without spare area*    |             |         |
+|  Page                   |         512 |  Bytes  |
+|  Block                  |          32 |  Pages  |
+|  Block                  |       16384 |  Bytes  |
+|  Number of blocks       |        2048 |  Blocks |
+|  Maximum Capacity       |  33.554.432 |  Bytes  |
+|  Maximum Capacity       | 268.435.456 |  bits   |
+|  Maximum Capacity       |         256 |  Mbits  |
+|  Maximum Capacity       |          32 |  MBytes |
+| *Spare area as starage* |             |         |
+|  Page                   |         528 |  Bytes  |
+|  Block                  |          32 |  Pages  |
+|  Block                  |       16896 |  Bytes  |
+|  Number of blocks       |        2048 |  Blocks |
+|  Maximum Capacity       |  34.603.008 |  Bytes  |
+|  Maximum Capacity       | 276.824.064 |  bits   |
+|  Maximum Capacity       |         264 |  Mbits  |
+|  Maximum Capacity       |          33 |  MBytes |
+
+
+### Windond W29N01HVDINA
+
+The ST NAND256W3A features the following:
+
+* 32 MBytes (=256 Mbits)
+* 538/264 Word Page = (=512+16/256+8). The size is not a power of two size due to the spare area (16/8).
+* Multiplexed Data/Address lines with up to 16 bit width.
+* Support to over than 100.000 erases cycles.
+* 8-bit wide data path. Other devices of the family can have 16-bit wide data path.
+* It has at least 2008 valid blocks from the original 2048.
+
+
+The table below shows some important parameters of the NAND256
+
+
+| Parameter                       |   Value     |  Unit |
+|---------------------------------|-------------|-------|
+| Page program time               |   200-500   |   us  |
+| Block erase time                |       2-3   |   ms  |
+| Program/Erase cycles            |   100.000   | cycles|
+| Data retention                  |        10   | years |
+
+#### Addressing
+
+|          |I/O7 |I/O6 |I/O5 |I/O4 |I/O3 |I/O2 |I/O1 |I/O0 |
+|----------|-----|-----|-----|-----|-----|-----|-----|-----|
+|1st cycle |  A7 |  A6 |  A5 |  A4 |  A3 |  A2 |  A1 |  A0 |
+|2nd cycle |  L  |  L  |  L  |  L  | A11 | A10 |  A9 | A8  |
+|3rd cycle | A19 | A18 | A17 | A16 | A15 | A14 | A13 | A12 |
+|4th cycle | A27 | A26 | A25 | A24 | A23 | A22 | A21 | A20 |
+
+A11-A0 select the column
+A27-A12 select the row.
+
+#### Commands
+
+| Command                     | 1st byte | 2nd byte| 3rd byte|
+|-----------------------------|----------|---------|---------|
+| Page read                   |  0x00    |   0x30  |    -    |
+| Read for copy back          |  0x00    |   0x35  |    -    |
+| Read status                 |  0x70    |    -    |    -    |
+| Read Electronic Signature/ID|  0x90    |    -    |    -    |
+| Read Status Register        |  0x70    |    -    |    -    |
+| Page Program                |  0x80    |  0x10   |    -    |
+| Copy Back Program           |  0x85    |  0x10   |  0x10   |
+| Block Erase                 |  0x60    |  0xD0   |    -    |
+| Reset                       |  0xFF    |    -    |    -    |
+| Random Data Input*          |  0x85    |    -    |    -    |
+| Random Data Output*         |  0x05    |  0xE0   |    -    |
+| Read Parameter Page         |  0xEC    |    -    |    -    |
+
+
+#### Electronic signature
+
+When using adress 0x00, one gets
+
+Manufacturer code:  0xEF
+Device ID:          0xF1
+Cache supported:    0x00
+Oage size,etc:      0x95
+
+When using address 0x20, one gets
+
+ONFI #0:            0x4F
+ONFI #1:            0x4E
+ONFI #2:            0x46
+ONFI #3:            0x49
+
+#### Summary
+
+|  Feature                |    Size      |  Unit   |
+|-------------------------|--------------|---------|
+|  1st Half Page          |         1024 |  Bytes  |
+|  2st Half Page          |         1024 |  Bytes  |
+|  Spare area             |           64 |  Bytes  |
+| Without spare area      |              |         |
+|  Page                   |         2048 |  Bytes  |
+|  Block                  |           64 |  Pages  |
+|  Block                  |      131.072 |  Bytes  |
+|  Number of blocks       |         1024 |  Blocks |
+|  Maximum Capacity       |  134.217.728 |  Bytes  |
+|  Maximum Capacity       |  268.435.456 |  bits   |
+|  Maximum Capacity       |1.073.741.824 |  bits   |
+|  Maximum Capacity       |         1024 |  Kbits  |
+|  Maximum Capacity       |          128 |  MBytes |
+| Spare area as storage   |              |         |
+|  Page                   |         2112 |  Bytes  |
+|  Block                  |           64 |  Pages  |
+|  Block                  |      135.168 |  Bytes  |
+|  Number of blocks       |         1024 |  Blocks |
+|  Maximum Capacity       |  138.412.032 |  Bytes  |
+|  Maximum Capacity       |1.107.296.256 |  bits   |
+|  Maximum Capacity       |         1056 |  Kbits  |
+|  Maximum Capacity       |          132 |  MBytes |
 
 
 ### Pinout
@@ -177,10 +429,24 @@ The pinout is show below.
 | RB      | Ready/Busy (open-drain output)                            |
 | W       | Write Enable                                              |
 | WP      | Write Protect                                             |
-| VDD     | Supply Voltage                                            |
-| VSS     | Ground                                                    |
-| NC      | Not Connected Internally                                  |
-| DU      | Do Not Use                                                |
+                                            |
+
+### Connections
+
+Both device share the same connections.
+
+| Pin     | Board signal|   MCU pin                         |
+|---------|-------------|-----------------------------------|
+| E       | NAND_PWR_EN |   MCU_PB15                        |
+| WP      | NAND_WP#    |   MCU_PD13                        |
+| I/O0-7  | NAND_IO0-7  |   MCU_PE8-15/EBI_AD0-7            |
+| RB      | NAND_RB#    |   MCU_PD15                        |
+| CE      | NAND_CE#    |   MCU_PD14                        |
+| RE      | NAND_RE#    |   MCU_PF9/EBI_REn                 |
+| WE      | NAND_WE#    |   MCU_PF8/EBI_WEn                 |
+| ALE     | NAND_ALE    |   MCU_PC1/EBI_A24                 |
+| CLE     | NAND_CLE    |   MCU_PC2/EBI_A25                 |
+
 
 
 ### Operation
@@ -197,181 +463,62 @@ The pinout is show below.
 
 
 
-### Commands
-
-!!! The operation of a NAND Flash envolves getting the contents of a page into a page buffer (528x8),
-!!! exactly the same width of a page, update it and eventually write it back.!!!!!!
-
-The operation of the device is controlled by commands, generally a sequence of up to thre bytes.
-
-| Command                  | 1st byte  | 2nd byte  | 3rd byte  |
-|--------------------------|-----------|-----------|-----------|
-| Read A (1st half page)   |  0x00     |    -      |    -      |
-| Read B (2nd half page)   |  0x01     |    -      |    -      |
-| Read C (Spare area)      |  0x50     |    -      |    -      |
-| Read Electronic Signature|  0x90     |    -      |    -      |
-| Read Status Register     |  0x70     |    -      |    -      |
-| Page Program             |  0x80     |  0x10     |    -      |
-| Copy Back Program        |  0x00     |  0x8A     |  0x10     |
-| Block Erase              |  0x60     |  0xD0     |    -      |
-| Reset                    |  0xFF     |    -      |    -      |
-
-The addresses are input by an up to four bytes (bug generally, only three are used).
-
-|   Bus cycle   | IO7  | IO7  | IO5  | IO4  | IO3  | IO2  | IO1  | IO0  |
-|---------------|------|------|------|------|------|------|------|------|
-|    1st        | A7   | A6   | A5   | A4   | A3   | A2   | A1   | A0   |
-|    2nd        | A16  | A15  | A14  | A13  | A12  | A11  | A10  | A9   |
-|    3rd        | A24  | A23  | A22  | A21  | A20  | A19  | A18  | A17  |
-|    4th        |  -   |  -   |  -   |  -   |  -   |  -   | A26  | A25  |
-
-> NOTE 1: A8 is set Low or High by the 0x00 or 0x01 command. It defines the half page to be read.
-
-> NOTE 2: The 4th byte is optional for device with 256 MBytes or less.
-
-The address can be interpreted as composed of many fields:
-
-| Address bits   |  Description                    |
-|----------------|---------------------------------|
-|   A7-A0        | Column address                  |
-|   A8           | Which half page                 |
-|   A13-A9       | Address in block                |
-|   A26-A14      | Block address                   |
-|   A26-A9       | Page address                    |
-
-
-The bit A8 of the address is used to specify which Area (A or B) to access. When 0, access is done
-starting at Area A. When 1, Area B. When reading the spare area, only address bit A3-A0 are used.
-Address bits A7-A4 are ignored.
-
-> The device defaults to Area A after power up or a reset.
-
-> The Read B command in only effective for one operation
-
-
 ### Device operation
 
+The interface to the NAND device is built on the use of three ports and pins.
+The ports are implemented by the EBI (External Bus Interface).
+The EBI peripheral takes care of the Read (RE) and Write (WE) signals.
+The A24 and A25 signals are connected to Address Strobe (ALE) and Command Strobe (CLE) signals, respectively.
 
-These are the operations for a x8 device.
-
-#### Pointer operation
-
-1. Send READ_A command (0x00) to set pointer to Area A or
-   Send READ_B command (0x01) to set pointer to Area B or
-   Send READ_C command (0x50) to set pointer ot Area C (Spare area)
-
-   OBS: READ_B in only effective for one operation
-
-
-
-### Read operation
-
-There are the following types of read operation available.
-
-* Random read. The first read after a command. It tranfers data from page to page buffer.
-* Page Read. The following read operations get data from page buffer. Pulsing RE make the next read
-get the byte in next column.
-* Sequential Row Read. After data in last column is output, by pulsing RE, the next page is
-  automatically loaded into the page buffer. This is limited to the current block!!!
-  To terminate the operation, set CE high for a while.
-
-> The Ready/Busy signal indicates that the transfer to the page buffer is completed.
-
-The low-order bits of the address specifies the start of the read. When using x8 devices
-
-* When the pointer is set to Area A, A7-0 specifies the start in the Area A when it is less than
- 128 or Area B (when higher).
-* When the pointer is set to Area B, only Area B is read.
-* When the pointer is set to Area C, only A3-0 is used.
-
-The sequence for reading the Area A (1st half page) is
-
-1. Send command READ_A (0x00)
-2. Send address
-3. Wait until READY
-3. Read data
-
-The sequence for reading the Area B (2nd half page) is
-
-1. Send command READ_B(0x01)
-2. Send address
-3. Wait until READY
-3. Read data
-
-The sequence for reading the Area C (spare area) is
-
-1. Send command READ_C (0x50)
-2. Send address
-3. Wait until READY
-3. Read data
+|   A25 |   A24  |                                                            |
+|-------|--------|------------------------------------------------------------|
+|     0 |     0  |  Data bus                                                  |
+|     0 |     1  |  Address port                                              |
+|     1 |     0  |  Command port                                              |
+|     1 |     1  |  Invalid                                                   |
 
 
-
-### Write Operation
-
-The Page Program (command 0x80) is the standard way to program data into the memory array.
-
-> There is a limit of three consecutive partial program in the same page. After it, a Block Erase
-> must be issued.
-
-The sequence for programming the area A (1st half page) is
-
-1. Send command READ_A (0x00)
-2. Send command PAGE_PROGRAM (0x80)
-3. Send address
-4. Send data
-5. Send command PAGE_PROGRAM_2 (0x10)
-6. Send command READ_A (0x00). Optional.
-7. Send command PAGE_PROGRAM_1 (0x80)
-8. Send address
-9. Send data
-10.Send command PAGE_PROGRAM_2 (0x10)
-
-The sequence for programming the area B (2nd half page) is
-
-1. Send command READ_B (0x01)
-2. Send command PAGE_PROGRAM_1 (0x80)
-3. Send address
-4. Send data
-5. Send command PAGE_PROGRAM_2 (0x10)
-6. Send command READ_B (0x01). Obrigatory.
-7. Send command PAGE_PROGRAM_1 (0x80)
-8. Send address
-9. Send data
-10.Send command PAGE_PROGRAM_2 (0x10)
-
-The sequence for programming the area C (Spare area) is
-
-1. Send command READ_C (0x50)
-2. Send command PAGE_PROGRAM (0x80)
-3. Send address
-4. Send data
-5. Send command PAGE_PROGRAM_2 (0x10)
-6. Send command READ_A (0x00). Optional.
-7. Send command PAGE_PROGRAM_1 (0x80)
-8. Send address
-9. Send data
-10.Send command PAGE_PROGRAM_2 (0x10)
+|   Port          |  Address       |   Description                             |
+|-----------------|----------------|-------------------------------------------|
+| DATA_PORT       |  0x8000_0000   | Data bus     (RW)                         |
+| ADDRESS_PORT    |  0x8100_0000   | Address port (W)                          |
+| COMMAND_PORT    |  0x8200_0000   | Command port (W)                          |
 
 
-### Read Status
+> Note: Only address bits 25 to 24 are used by the EBI to interface the Flash device. The address bis 31 to 26 are used internally. The remaining are don't
+care. It is recommended to be used as zero. Do not confuse these address to the 
+internal address used to access a specific data inside the NAND Flash device.
 
-### Read Electronic Signature
 
-1. Send command 0x90
-2. Read two bytes
+Additionally, some signals are controlled thru the GPIO.
 
-### Copy Back Program
+| Signal      | GPIO pin | Direction| Active|Description                       |
+|-------------|----------|----------|------------------------------------------|
+| NAND_PWR_EN | MCU_PB15 | Output   | High  | Turn On switch to power device   |
+| NAND_WP#    | MCU_PD13 | Output   | Low   | Enable program and eraserations  |
+| NAND_RB#    | MCU_PD15 | Input    | High  | Status: Ready (1)/Busy(0)        |
+| NAND_CE#    | MCU_PD14 | Output   | Low   | Enable device                    |
 
-This operation transfers data from one page to another, without external access.
 
-1. Send command READ_A (0x00)
-2. Send source address
-3. Send command COPY_BACK (0x8a)
-4. Send destination address
-5. Send command (0x10)
-6. Send command 0x70
-7. Read data (SR0)
+### Timing
+
+Configuration for the maximal clock frequency (48 MHz). This corresponds to 
+a period of 20.8 ns.
+
+| Parameter | NAND256W3A | W29N01HVDINA | NAND256W3A | W29N01HVDINA  |
+|-----------|------------|--------------|------------|---------------|
+|  WRHOLD   |            |              |      1     |               |
+|  WRSETUP  |            |              |      0     |               |
+|  WRSTRB   |            |              |      2     |               |
+|  RDHOLD   |            |              |      1     |               |
+|  RDSETUP  |            |              |      0     |               |
+|  RDSTRB   |            |              |      2     |               |
+|  ADDRHOLD |            |              |      0     |               |
+|  ADDRSETUP|            |              |      0     |               |
+
+### Polarity
+
+Polarity is active low for all control signals.
 
 
 ### Software Algorithms
@@ -422,39 +569,6 @@ There are tow wear-level procedures:
 cycles.
 * Second Level Wear-Leveling: Bkocks with long lived data gives room to new data, after their
 contents are written to other blocks.
-
-### Timing
-
-From the NAND data sheet
-
-
-| Parameter |  Description                          |  Value   |  Unit    |
-|-----------|---------------------------------------|----------|----------|
-| tADL      | ?                                     |    0     |   ns     |
-| tALS      | AL Setup time                         |    0     |   ns     |
-| tCS       | E# Setup time                         |    0     |   ns     |
-| tCLS      | CL Setup time                         |    0     |   ns     |
-| tDS       | Data Setup time                       |   20     |   ns     |
-| tALH      | AL Hold time                          |   10     |   ns     |
-| tCH       | E Hold time                           |   10     |   ns     |
-| tCLH      | CL Hold time                          |   10     |   ns     |
-| tDH       | Data Hold time                        |   10     |   ns     |
-| tWC       | Write cycle time                      |   50     |   ns     |
-| tWH       | W# High Hold time                     |   15     |   ns     |
-| tWP       | W# Pulse Width                        |   25     |   ns     |
-| tWB       | Write Enable High to Ready/Busy Low   |  100     |   ns     |
-| tCEA      | Chip Enable Low to Output Valid       |   45     |   ns     |
-| tREA      | Read Enable Low to Output             |   35     |   ns     |
-| tRP       | Read Enable Low to Read Enable Low    |   30     |   ns     |
-| tRHZ      | Read Enable High to Output Hi-Z       |   30     |   ns     |
-| tREH      | Read Enable High to Read Enable Low   |   15     |   ns     |
-| tRC       | Read Enable Low to Read Enable Low    |   60     |   ns     |
-| tRR       | Ready/Busy High to Read Enable Low    |   20     |   ns     |
-| tAR       | Address Latch Low to Read Enable Low  |   10     |   ns     |
-| tCLR      | Command Latch Low to Read Enable Low  |   10     |   ns     |
-| tIR       | Data Hi-Z to Read Enable Low          |    0     |   ns     |
-| tWC       | Write Enable Low to Write Enable Low  |   50     |   ns     |
-
 
 ### Read sequence
 
@@ -530,46 +644,47 @@ program command can be verified by programming the read status command.
 NAND Flash on the STK3700
 -------------------------
 
-The EMF32GG-STK3700 has an 32 MBytes (=256 Mbit) NAND Flash device  (ST NAND256W3A), with an
-8 bit parallel interface and support for ECC (E Correction Code).
 
-The device can be power up or down by the NAND_PWR_EN (PB15).
-
-The EFM32GG family has a EBI (External Bus Interface) peripheral that handles the interface and
-map the device into the MCU memory. It uses a multiplexing mechanism to reduce the pin count.
+The EFM32GG family has a EBI (External Bus Interface) peripheral that handles
+the interface and map the device into the MCU memory. It uses a multiplexing mechanism to reduce the pin count.
 
 The pins used for this interface are show below.
 
 
-| MCU Pin | PCB Signal  |  NAND Signal | MCU Signal  | Description                   |
-|---------|-------------|--------------|-------------|-------------------------------|
-| PD13    | NAND_WP#    |    WP#       | GPIO_PD13   | Write Protect                 |
-| PD14    | NAND_CE#    |    E#        | GPIO_PD14   | Chip Enable                   |
-| PD15    | NAND_R/B#   |    R/B#      | GPIO_PD15   | Ready/Busy indicator          |
-| PC1     | NAND_ALE    |    AL        | EBI_A24     | Address Latch Enable/A24      |
-| PC2     | NAND_CLE    |    CL        | EBI_A25     | Command Latch Enable/A25      |
-| PF8     | NAND_WE#    |    W#        | EBI_WEn     | Write Enable                  |
-| PF9     | NAND_RE#    |    R#        | EBI_REn     | Read Enable                   |
-| PE15    | NAND_IO7    |    I/O7      | EBI_AD7     | I/O bit #7                    |
-| PE14    | NAND_IO6    |    I/O6      | EBI_AD6     | I/O bit #6                    |
-| PE13    | NAND_IO5    |    I/O5      | EBI_AD5     | I/O bit #5                    |
-| PE12    | NAND_IO4    |    I/O4      | EBI_AD4     | I/O bit #4                    |
-| PE11    | NAND_IO3    |    I/O3      | EBI_AD3     | I/O bit #3                    |
-| PE10    | NAND_IO2    |    I/O2      | EBI_AD2     | I/O bit #2                    |
-| PE9     | NAND_IO1    |    I/O1      | EBI_AD1     | I/O bit #1                    |
-| PE8     | NAND_IO0    |    I/O0      | EBI_AD0     | I/O bit #0                    |
-| PB15    | NAND_PWR_EN |      -       | GPIO_PB15   | Power enable (TS5A3166 switch)|
+| MCU Pin | PCB Signal  | NAND Signal | MCU Signal | Description           |
+|---------|-------------|-------------|------------|-----------------------|
+| PD13    | NAND_WP#    |    WP#      | GPIO_PD13  | Write Protect         |
+| PD14    | NAND_CE#    |    E#       | GPIO_PD14  | Chip Enable           |
+| PD15    | NAND_R/B#   |    R/B#     | GPIO_PD15  | Ready/Busy indicator  |
+| PC1     | NAND_ALE    |    AL       | EBI_A24    | Address Latch Enable  |
+| PC2     | NAND_CLE    |    CL       | EBI_A25    | Command Latch Enable  |
+| PF8     | NAND_WE#    |    W#       | EBI_WEn    | Write                 |
+| PF9     | NAND_RE#    |    R#       | EBI_REn    | Read                  |
+| PE15    | NAND_IO7    |    I/O7     | EBI_AD7    | I/O bit #7            |
+| PE14    | NAND_IO6    |    I/O6     | EBI_AD6    | I/O bit #6            |
+| PE13    | NAND_IO5    |    I/O5     | EBI_AD5    | I/O bit #5            |
+| PE12    | NAND_IO4    |    I/O4     | EBI_AD4    | I/O bit z4            |
+| PE11    | NAND_IO3    |    I/O3     | EBI_AD3    | I/O bit #3            |
+| PE10    | NAND_IO2    |    I/O2     | EBI_AD2    | I/O bit #2            |
+| PE9     | NAND_IO1    |    I/O1     | EBI_AD1    | I/O bit #1            |
+| PE8     | NAND_IO0    |    I/O0     | EBI_AD0    | I/O bit #0            |
+| PB15    | NAND_PWR_EN |      -      | GPIO_PB15  | Power enable          |
 
+NOTES:
+1 - The Address Latch Enable is configured to output the A24 signal
+2 - The Command Latch Enable is configured to output the A25 signal
+3 - The power circuite to the NAND flash is a TS5A3166 switch or a SiP32431DN 
+    on newer board versions.
+    
 
-Some pins are controlled directly by the GPIO module. Others by the EBI module. The EBI_ROUTE
-register controls which pins are used.
+Some pins are controlled directly by the GPIO module. Others by the EBI module. The EBI_ROUTE register controls which pins are used.
 
-    | Field        |  Bits    |  Description                           |  Value       |
-    |--------------|----------|----------------------------------------|--------------|
-    | LOCATION     | 30-28    | LOC# for EBI_IOn pins                  |   0,1,2      |
-    | ALB          | 17-16    | EBI_A lower pin enabled (0,8,16,*24*)  |   3          |
-    | APEN         | 22-18    | EBI bit field for A A25-A24            |  26          |
-    | NANDPEN      |  12      | NANDREn and NANDWEn pins enabled       |   1          |
+    | Field    | Bits  |  Description                    |  Value       |
+    |----------|-------|---------------------------------|--------------|
+    | LOCATION | 30-28 | LOC# for EBI_IOn pins           |   0,1,2      |
+    | ALB      | 17-16 | EBI_A lower pin enabled         |   3          |
+    | APEN     | 22-18 | EBI bit field for A A25-A24     |  26          |
+    | NANDPEN  |  12   | NANDREn and NANDWEn pins enabled|   1          |
 
 
 
@@ -588,7 +703,7 @@ Latch Enable (ALE) and command Latch Enable (CLE) lines. So, when addressing mem
 bit set, the ALE line is set and the data transmitted is interpreted as an address.
 Similarly, when addressing with the A25 bit set, the CLE line is set.
 
-The device register are mapped into the MCU memory map.
+The device registers are mapped into the MCU memory map.
 
 | Register     |  Address                   |
 |--------------|----------------------------|
@@ -623,14 +738,9 @@ There are four EBI regions that can be used to access the NAND Flash device.
 
 ### Support for NAND Flash devices
 
-NAND Flash devices work using a page access and use and indirect interface. NOR Flash devices
-supports random read access but are smaller and slower than NAND devices. Another important
-difference is that NAND devices has more succeptible to errors, and in general, an Error Correction
-Code (ECC) is used.
+NAND Flash devices work using a page access and use and indirect interface. NOR Flash devices supports random read access but are smaller and slower than NAND devices. Another important difference is that NAND devices has more succeptible to errors, and in general, an Error Correction Code (ECC) is used.
 
-The EBI supports 8 and 16-bit wide Flash devices. It is easy (and glueless) to connect a flash
-device to a EFM32GG.
-A mixed scheme of EBI and GPIO controlled pins is used.
+The EBI supports 8 and 16-bit wide Flash devices. It is easy (and glueless) to connect a flash device to a EFM32GG. A mixed scheme of EBI and GPIO controlled pins is used.
 
 | NAND Signal | Name         |  EFM32GG Signal       |
 |-------------|--------------|-----------------------|
@@ -643,11 +753,9 @@ A mixed scheme of EBI and GPIO controlled pins is used.
 | E#          | Enable       | GPIO_PORTxy (output)  |
 | R/B         | Ready/Busy   | GPIO_Portxy (input)   |
 
-> There is a class of NAND Flash devices called Chip Enable Don't Care (CEDC), that demands that
-an EBI Chip Select EBI_CSn is used and controlled by the EBI module. CEDC Flash devices do not
-support automatic sequential support.
+> There is a class of NAND Flash devices called Chip Enable Don't Care (CEDC), that demands that an EBI Chip Select EBI_CSn is used and controlled by the EBI module. CEDC Flash devices do not support automatic sequential support.
 
-> There are extra lines EBI_AD15_8 that are used in 16 bit wide devices.
+> The extra lines EBI_AD15_8 that are used in 16-bit devices.
 
 The table below shows the mapping when AL is connected to  A24 and CL to A25.
 
@@ -747,19 +855,20 @@ There are two versions of YAFFS:
 * version 1: Supports 512-byte pages. In maintenance mode. Uses deletion markers.
 * version 2: Supports 512 and 2k pages. Active.
 
-    |-----------------------------------------------|
-    |               Application                     |
-    |-----------------------------------------------|
-    |           POSIX Interface                     |
-    |-----------------------------------------------|
-    |           YAFFS Direct Interface              |
-    |-----------------------------------------------|
-    |           YAFFS Core Filesystem               |
-    |-----------------------------------------------|
-    | RTOS interface |            | Flash interface |
-    |----------------|            |-----------------|
-    |     RTOS       |            |      Flash      |
-    |----------------|            |-----------------|
+
+         |-----------------------------------------------|
+         |               Application                     |
+         |-----------------------------------------------|
+         |           POSIX Interface                     |
+         |-----------------------------------------------|
+         |           YAFFS Direct Interface              |
+         |-----------------------------------------------|
+         |           YAFFS Core Filesystem               |
+         |-----------------------------------------------|
+         | RTOS interface |            | Flash interface |
+         |----------------|            |-----------------|
+         |     RTOS       |            |      Flash      |
+         |----------------|            |-----------------|
 
 
 YaFFS store objects in a NAND device. Objects can be:
@@ -802,42 +911,6 @@ The DMA controller is configured by:
 * Setting registers of the DMA peripheral
 * Setting descriptor in system memory
 
-### DMA registers
-
-| Register              |                                                               |
-|-----------------------|-----|---------------------------------------------------------|
-| DMA_STATUS            |R    | DMA Status Registers                                    |
-| DMA_CONFIG            |R    | DMA Configuration Register                              |
-| DMA_CTRLBASE          |RW   | Channel Control Data Base Pointer Register              |
-| DMA_ALTCTRLBASE       |R    | Channel Alternate Control Data Base Pointer Register    |
-| DMA_CHWAITSTATUS      |R    | Channel Wait on Request Status Register                 |
-| DMA_CHSWREQ           |W1   | Channel Software Request Register                       |
-| DMA_CHUSEBURSTSR      |RW1H | Channel Useburst Set Register                           |
-| DMA_CHUSEBURSTC       |W1   | Channel Useburst Clear Register                         |
-| DMA_CHREQMASKSR       |W1   | Channel Request Mask Set Register                       |
-| DMA_CHREQMASKC        |W1   | Channel Request Mask Clear Register                     |
-| DMA_CHENSR            |RW1  | Channel Enable Set Register                             |
-| DMA_CHENC             |W1   | Channel Enable Clear Register                           |
-| DMA_CHALTSR           |W1   | Channel Alternate Set Register                          |
-| DMA_CHALTC            |W1   | Channel Alternate Clear Register                        |
-| DMA_CHPRIS            |RW1  | Channel Priority Set Register                           |
-| DMA_CHPRIC            |W1   | Channel Priority Clear Register                         |
-| DMA_ERRORC            |RW   | Bus Error Clear Register                                |
-| DMA_CHREQSTATUS       |R    | Channel Request Status                                  |
-| DMA_CHSREQSTATUS      |R    | Channel Single Request Status                           |
-| DMA_IF                |R    | Interrupt Flag Register                                 |
-| DMA_IFS               |W1   | Interrupt Flag Set Register                             |
-| DMA_IFC               |W1   | Interrupt Flag Clear Register                           |
-| DMA_IEN               |R    | WInterrupt Enable register                              |
-| DMA_CTRL              |RW   | DMA Control Register                                    |
-| DMA_RDS               |RW   | DMA Retain Descriptor State                             |
-| DMA_LOOP0             |RWH  | Channel 0 Loop Register                                 |
-| DMA_LOOP1             |RW   | Channel 1 Loop Register                                 |
-| DMA_RECT0             |RWH  | Channel 0 Rectangle Register                            |
-| DMA\_CH0\_CTRL        |RW   | Channel Control Register                                |
-| DMA\_CHx\_CTRL        |RW   | Channel Control Register                                |
-| ...                   |...  | ...                                                     |
-| DMA\_CH11\_CTRL       |RW   | Channel Control Register                                |
 
 
 ### Channel control data structure
@@ -894,7 +967,8 @@ Each channel structure is 16 bytes long and has the following format.
 
 The pointer fields are not written by the controller.
 
-The control word has the following format
+The control word is the only field updated by the controller 
+and has the following format
 
 | Bit field | Description                                    |
 |-----------|------------------------------------------------|
@@ -941,73 +1015,6 @@ Calculation of source address and destination address
 |  0b10    |  0b10   | src_data_end_ptr - (n_minus_1<<2) | dst_data_end_ptr - (n_minus_1<<2)  |
 |  0b11    |  0b11   | src_data_end_ptr                  | dst_data_end_ptr                   |
 
-Annex A - EBI Pin Usage
-=======================
-
-|  Pin        |LOC0 | LOC1 | LOC2 | Descriptiojn                                                |
-|-------------|-----|------|------|-------------------------------------------------------------|
-| EBI_A00     | PA12| PA12 | PA12 | External Bus Interface (EBI) address output pin 00.         |
-| EBI_A01     | PA13| PA13 | PA13 | External Bus Interface (EBI) address output pin 01.         |
-| EBI_A02     | PA14| PA14 | PA14 | External Bus Interface (EBI) address output pin 02.         |
-| EBI_A03     | PB9 | PB9  | PB9  | External Bus Interface (EBI) address output pin 03.         |
-| EBI_A04     | PB10| PB10 | PB10 | External Bus Interface (EBI) address output pin 04.         |
-| EBI_A05     | PC6 | PC6  | PC6  | External Bus Interface (EBI) address output pin 05.         |
-| EBI_A06     | PC7 | PC7  | PC7  | External Bus Interface (EBI) address output pin 06.         |
-| EBI_A07     | PE0 | PE0  | PE0  | External Bus Interface (EBI) address output pin 07.         |
-| EBI_A08     | PE1 | PE1  | PE1  | External Bus Interface (EBI) address output pin 08.         |
-| EBI_A09     | PE2 | PC9  | PC9  | External Bus Interface (EBI) address output pin 09.         |
-| EBI_A10     | PE3 | PC10 | PC10 | External Bus Interface (EBI) address output pin 10.         |
-| EBI_A11     | PE4 | PE4  | PE4  | External Bus Interface (EBI) address output pin 11.         |
-| EBI_A12     | PE5 | PE5  | PE5  | External Bus Interface (EBI) address output pin 12.         |
-| EBI_A13     | PE6 | PE6  | PE6  | External Bus Interface (EBI) address output pin 13.         |
-| EBI_A14     | PE7 | PE7  | PE7  | External Bus Interface (EBI) address output pin 14.         |
-| EBI_A15     | PC8 | PC8  | PC8  | External Bus Interface (EBI) address output pin 15.         |
-| EBI_A16     | PB0 | PB0  | PB0  | External Bus Interface (EBI) address output pin 16.         |
-| EBI_A17     | PB1 | PB1  | PB1  | External Bus Interface (EBI) address output pin 17.         |
-| EBI_A18     | PB2 | PB2  | PB2  | External Bus Interface (EBI) address output pin 18.         |
-| EBI_A19     | PB3 | PB3  | PB3  | External Bus Interface (EBI) address output pin 19.         |
-| EBI_A20     | PB4 | PB4  | PB4  | External Bus Interface (EBI) address output pin 20.         |
-| EBI_A21     | PB5 | PB5  | PB5  | External Bus Interface (EBI) address output pin 21.         |
-| EBI_A22     | PB6 | PB6  | PB6  | External Bus Interface (EBI) address output pin 22.         |
-| EBI_A23     | PC0 | PC0  | PC0  | External Bus Interface (EBI) address output pin 23.         |
-| EBI_A24     | PC1 | PC1  | PC1  | External Bus Interface (EBI) address output pin 24.         |
-| EBI_A25     | PC2 | PC2  | PC2  | External Bus Interface (EBI) address output pin 25.         |
-| EBI_A26     | PC4 | PC4  | PC4  | External Bus Interface (EBI) address output pin 26.         |
-| EBI_A27     | PD2 | PD2  | PD2  | External Bus Interface (EBI) address output pin 27.         |
-| EBI_AD00    | PE8 | PE8  | PE8  | External Bus Interface (EBI) address and data i/o pin 00.   |
-| EBI_AD01    | PE9 | PE9  | PE9  | External Bus Interface (EBI) address and data i/o pin 01.   |
-| EBI_AD02    | PE10| PE10 | PE10 | External Bus Interface (EBI) address and data i/o pin 02.   |
-| EBI_AD03    | PE11| PE11 | PE11 | External Bus Interface (EBI) address and data i/o pin 03.   |
-| EBI_AD04    | PE12| PE12 | PE12 | External Bus Interface (EBI) address and data i/o pin 04.   |
-| EBI_AD05    | PE13| PE13 | PE13 | External Bus Interface (EBI) address and data i/o pin 05.   |
-| EBI_AD06    | PE14| PE14 | PE14 | External Bus Interface (EBI) address and data i/o pin 06.   |
-| EBI_AD07    | PE15| PE15 | PE15 | External Bus Interface (EBI) address and data i/o pin 07.   |
-| EBI_AD08    | PA15| PA15 | PA15 | External Bus Interface (EBI) address and data i/o pin 08.   |
-| EBI_AD09    | PA0 | PA0  | PA0  | External Bus Interface (EBI) address and data i/o pin 09.   |
-| EBI_AD10    | PA1 | PA1  | PA1  | External Bus Interface (EBI) address and data i/o pin 10.   |
-| EBI_AD11    | PA2 | PA2  | PA2  | External Bus Interface (EBI) address and data i/o pin 11.   |
-| EBI_AD12    | PA3 | PA3  | PA3  | External Bus Interface (EBI) address and data i/o pin 12.   |
-| EBI_AD13    | PA4 | PA4  | PA4  | External Bus Interface (EBI) address and data i/o pin 13.   |
-| EBI_AD14    | PA5 | PA5  | PA5  | External Bus Interface (EBI) address and data i/o pin 14.   |
-| EBI_AD15    | PA6 | PA6  | PA6  | External Bus Interface (EBI) address and data i/o pin 15.   |
-| EBI_ALE     | PC11| PC11 |      | External Bus Interface (EBI) Address Latch Enable output.   |
-| EBI_ARDY    | PF2 | PF2  | PF2  | External Bus Interface (EBI) Hardware Ready Control input.  |
-| EBI_BL0     | PF6 | PF6  | PF6  | External Bus Interface (EBI) Byte Lane/Enable pin 0.        |
-| EBI_BL1     | PF7 | PF7  | PF7  | External Bus Interface (EBI) Byte Lane/Enable pin 1.        |
-| EBI_CS0     | PD9 | PD9  | PD9  | External Bus Interface (EBI) Chip Select output 0.          |
-| EBI_CS1     | PD10| PD10 | PD10 | External Bus Interface (EBI) Chip Select output 1.          |
-| EBI_CS2     | PD11| PD11 | PD11 | External Bus Interface (EBI) Chip Select output 2.          |
-| EBI_CS3     | PD12| PD12 | PD12 | External Bus Interface (EBI) Chip Select output 3.          |
-| EBI_CSTFT   | PA7 | PA7  | PA7  | External Bus Interface (EBI) Chip Select output TFT.        |
-| EBI_DCLK    | PA8 | PA8  | PA8  | External Bus Interface (EBI) TFT Dot Clock pin.             |
-| EBI_DTEN    | PA9 | PA9  | PA9  | External Bus Interface (EBI) TFT Data Enable pin.           |
-| EBI_HSNC    | PA11| PA11 | PA11 | External Bus Interface (EBI) TFT Horiz. Synchroniz. pin.    |
-| EBI_NANDREn | PC3 | PC3  | PC3  | External Bus Interface (EBI) NAND Read Enable output.       |
-| EBI_NANDWEn | PC5 | PC5  | PC5  | External Bus Interface (EBI) NAND Write Enable output.      |
-| EBI_REn     | PF5 | PF9  | PF5  | External Bus Interface (EBI) Read Enable output.            |
-| EBI_VSNC    | PA10| PA10 | PA10 | External Bus Interface (EBI) TFT Vert. Synchroniz. pin.     |
-| EBI_WEn     |     | PF8  |      | External Bus Interface (EBI) Write Enable output.           |
-
 
 References
 ----------
@@ -1019,3 +1026,11 @@ References
 4. [LittleFS](https://github.com/littlefs-project/littlefs)
 5. [SPIFFS (SPI Flash File System)](https://github.com/pellepl/spiffs)
 6. [PrimeCell DMA Controller (PL230) Technical Reference Manual ](https://developer.arm.com/documentation/ddi0417/a/?lang=en)
+7. [NAND FLASH ECC verification principle and implementation](https://en.eeworld.com.cn/news/mcu/eic312689.html)
+8. [Micron AN1819 Bad Block Management in NAND Flash Memory
+Introductio](https://d1.amobbs.com/bbs_upload782111/files_46/ourdev_684398U97OG3.pdf)
+9. [NAND Flash ECC Algorithm (Error Checking & Correction)](https://www.elnec.com/sw/samsung_ecc_algorithm_for_256b.pdf)
+10. [NAND flash replacement on EFM32GG starter kit](https://community.silabs.com/s/question/0D51M00007xeRcrSAE/nand-flash-replacement-on-efm32gg-starter-kit?language=sv)
+11. [NAND128-A NAND256-A](https://www.mouser.com/catalog/specsheets/stmicroelectronics_xxx-a.pdf)
+12. [NAND128-A, NAND256-A, NAND512-A, NAND01G-A](https://www.jotrin.com/product/parts/NAND256W3A?srsltid=AfmBOoqWVFEtRdYKOohBaCeSeRtZ3tlxIbY-aqEn1JG7Wl7xxhRV0o2v)
+9.

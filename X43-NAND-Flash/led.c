@@ -6,7 +6,8 @@
 
 #include <stdint.h>
 /*
- * Including this file, it is possible to define which processor using command line
+ * Including this file, it is possible to define which processor using comman
+ * line
  * E.g. -DEFM32GG995F1024
  * The alternative is to include the processor specific file directly
  * #include "efm32gg995f1024.h"
