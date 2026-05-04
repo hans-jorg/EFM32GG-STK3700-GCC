@@ -93,7 +93,6 @@ int DAC_EnableChannels(unsigned bm) {
  *
  */
 int DAC_Init(unsigned config, unsigned samplerate ) {
-unsigned daclkfreq;
 uint32_t chs = 0;
 
     // At least, one channel must be enabled

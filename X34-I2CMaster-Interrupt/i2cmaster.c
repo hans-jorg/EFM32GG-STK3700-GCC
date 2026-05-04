@@ -578,7 +578,7 @@ TransferInfo *ti;
 
     while (ti->state==STATE_TX_SENDDATA) {}
 
-    return 0;
+    return rc;
 }
 
 
@@ -689,6 +689,11 @@ ClockConfiguration_t clockconf;
     // TODO: Calculate N_high and N_low
     nh = 0;
     nl = 0;
+
+    // Shut up error messages
+    (void) nl;
+    (void) th;
+    (void) div;
 
     i2c->CLKDIV = (nh<<_I2C_CLKDIV_DIV_SHIFT)&_I2C_CLKDIV_DIV_MASK;
 

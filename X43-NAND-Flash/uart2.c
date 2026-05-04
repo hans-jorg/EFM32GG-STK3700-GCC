@@ -6,9 +6,9 @@
  * @note    Configure UART0 to work at 115200 bps, 8 bit, no parity, 1 stop bit
  *          no parity handshake.
  *
- *          With this configuration, it can communicate with the board controller,
- *          which relay data in and from a Virtual Communication Port created
- *          as a CDC inside the USB connection.
+ *          With this configuration, it can communicate with the board
+ *          controller, which relay data in and from a Virtual Communication
+ *          Port created as a CDC inside the USB connection.
  *
  *          In Windows, it appears as COMx. In Linux, as /dev/ttyACMx.
  *
@@ -21,7 +21,8 @@
 
 #include <stdint.h>
 /*
- * Including this file, it is possible to define which processor using command line
+ * Including this file, it is possible to define which processor using command
+ * line
  * E.g. -DEFM32GG995F1024
  * The alternative is to include the processor specific file directly
  * #include "efm32gg995f1024.h"
@@ -107,7 +108,7 @@ void UART_Reset(void) {
  */
 
 void UART_Init(void) {
-uint32_t bauddiv;
+//uint32_t bauddiv;
 
     /* Enable Clock for GPIO and UART */
     CMU->HFPERCLKDIV |= CMU_HFPERCLKDIV_HFPERCLKEN;     // Enable HFPERCLK
@@ -403,4 +404,3 @@ int ch;
     UART0->IEN |= UART_IEN_TXC|UART_IEN_RXDATAV;
     return cnt;
 }
-

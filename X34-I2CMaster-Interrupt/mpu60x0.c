@@ -239,6 +239,7 @@ uint8_t outdata[1];
                     data.b,
                     2
                 );
+    (void) rc;
     *paccel = REVBYTES16(data.w);
     return 0;
 }
@@ -270,6 +271,7 @@ uint8_t outdata[1];
                     data.b,
                     2
                 );
+    (void) rc;
     *paccel = REVBYTES16(data.w);
     return 0;
 }
@@ -301,6 +303,7 @@ uint8_t outdata[1];
                     data.b,
                     2
                 );
+    (void) rc;
     *paccel = REVBYTES16(data.w);
     return 0;
 }
@@ -325,9 +328,8 @@ int MPU60x0_StartWriteMultipleRegisters( MPU60x0_Type *mpu, uint8_t startreg, in
 
 /**
  *   @brief  Start writiing to multiple registers
- */;
+ */
 int MPU60x0_StartReadRegister(MPU60x0_Type *mpu, uint8_t reg) {
-AllignedValue data;
 int rc;
 uint8_t outdata[1];
 
@@ -339,16 +341,15 @@ uint8_t outdata[1];
                     1,
                     1
                 );
-    return 0;
+    (void) rc;
     return 0;
 }
 
 
 /**
  *   @brief  Start writiing to multiple registers
- */;
+ */
 int MPU60x0_StartReadMultipleRegisters(MPU60x0_Type *mpu, uint8_t startreg, int count) {
-AllignedValue data;
 int rc;
 uint8_t outdata[1];
 
@@ -360,15 +361,15 @@ uint8_t outdata[1];
                     1,
                     count
                 );
+    (void) rc;
     return 0;
 }
 
 
 /**
  *   @brief  Start writiing to multiple registers
- */;
+ */
 int MPU60x0_StartReadAccel(MPU60x0_Type *mpu) {
-AllignedValue data;
 int rc;
 uint8_t outdata[1];
 
@@ -380,7 +381,7 @@ uint8_t outdata[1];
                     1,
                     6
                 );
-
+    (void) rc;
     return 0;
 }
 
@@ -389,7 +390,6 @@ uint8_t outdata[1];
  *   @brief  Start writiing to multiple registers
  */
 int MPU60x0_StartReadGyro(MPU60x0_Type *mpu) {
-AllignedValue data;
 int rc;
 uint8_t outdata[1];
 
@@ -401,6 +401,7 @@ uint8_t outdata[1];
                     1,
                     6
                 );
+    (void) rc;
     return 0;
 }
 
@@ -409,7 +410,6 @@ uint8_t outdata[1];
  *   @brief  Start writiing to multiple registers
  */
 int MPU60x0_StartReadAccelX(MPU60x0_Type *mpu) {
-AllignedValue data;
 int rc;
 uint8_t outdata[1];
 
@@ -421,7 +421,7 @@ uint8_t outdata[1];
                     1,
                     2
                 );
-
+    (void) rc;
     return 0;
 }
 
@@ -430,7 +430,6 @@ uint8_t outdata[1];
  *   @brief  Start writiing to multiple registers
  */
 int MPU60x0_StartReadAccelY(MPU60x0_Type *mpu) {
-AllignedValue data;
 int rc;
 uint8_t outdata[1];
 
@@ -442,7 +441,7 @@ uint8_t outdata[1];
                     1,
                     2
                 );
-
+    (void) rc;
     return 0;
 }
 
@@ -451,7 +450,6 @@ uint8_t outdata[1];
  *   @brief  Start writiing to multiple registers
  */
 int MPU60x0_StartReadAccelZ(MPU60x0_Type *mpu) {
-AllignedValue data;
 int rc;
 uint8_t outdata[1];
 
@@ -463,6 +461,7 @@ uint8_t outdata[1];
                     1,
                     2
                 );
+    (void) rc;
 
     return 0;
 }

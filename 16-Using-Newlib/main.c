@@ -79,17 +79,17 @@ void ConfigureClock(int speed) {
         (void) SystemCoreClockSet(CLOCK_HFXO,48,48);
         break;
     }
-    
+
     /*
      * There is a lot of device with dependencies on the clock frequency
      * Every time, it is change, they must be reconfigured
      * Do it here
      */
-     
-     
+
+
     /* Configure SysTick */
     SysTick_Config(SystemCoreClock/TickDivisor);
-    
+
     // Reconfigure UART because the Peripheral Clock has changed
     UART_ReconfigureClock();
 }
@@ -105,28 +105,28 @@ void ConfigureClock(int speed) {
 
 int main(void) {
 char line[100];
-int tryn = 0;
+//int tryn = 0;
 
     /* Configure LEDs */
     LED_Init(LED1|LED2);
 
     /* Turn on LEDs */
     LED_Write(0,LED1|LED2);
-    
+
     // UART module uses interrupt
     __enable_irq();
-    
-    
+
+
     /* Print message using UART HAL */
     UART_SendString("\n\rUsando UART_SendString\n\r");
 
     /* Print message using Newlib */
     printf("\n\rUsando printf\n\r");
-    
+
     /* Changing clock frequency */
     ConfigureClock(SPEED_HIGHEST);
-    
-    
+
+
 #define TEST 4
 
 #if TEST == 1
@@ -140,7 +140,7 @@ int tryn = 0;
 
         Delay(100);
     }
-    
+
 #elif TEST == 2
 
     char s[] = { [0 ... 197]='*','\n','\r' }; // Only gcc!!!
@@ -151,10 +151,10 @@ int tryn = 0;
         printf("Try %d\n",tryn++);
         for(int ch=47;ch<127;ch++)
             putchar(ch);
-            
+
         Delay(100);
     }
-    
+
 #elif TEST == 3
 
     char s2[] = "abcdefghijklmnopqrstuvwxyz";
@@ -163,7 +163,7 @@ int tryn = 0;
     while (1) {
         puts("\n\r");
         printf("Try %d\n",tryn++);
-        
+
         puts(p1);
         puts(p2);
         //printf(p1);
@@ -178,14 +178,14 @@ int tryn = 0;
             p2++;
         else
             p2 = s2;
-            
+
         Delay(1000);
     }
-    
+
 #elif TEST == 4
     UART_SendString("\n\rHello using UART_SendString\n");
     printf("\n\rHello using printf\n");
-    
+
     while(1) {
         printf("\nYour name: ");
         fgets(line,99,stdin);

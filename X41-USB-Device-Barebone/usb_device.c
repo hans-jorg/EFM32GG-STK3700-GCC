@@ -290,7 +290,7 @@ void USB_Delay(unsigned ms) {
  *
  * @note  Not calibrated
  */
-static void USB_Timer_us(register volatile int n) {
+static void __attribute__((unused)) USB_Timer_us(register volatile int n) {
     while( n-- ) {}
 }
 
@@ -480,7 +480,7 @@ static void USB_InitSystemPart(uint32_t conf) {
  *    either the Section 15.4.1.1 (p. 250) or Device Initialization (p. 251)
  *    sequence.
  */
-static void USB_InitCorePart(uint32_t conf) {
+static void __attribute__((unused)) USB_InitCorePart(uint32_t conf) {
 
     // TODO
 }
@@ -521,7 +521,7 @@ static void USB_InitCorePart(uint32_t conf) {
  * @note After it, all initialization required to receive SETUP packets is done,
  *       except for enabling control OUT endpoint 0 in DMA mode.
  */
-static void USB_InitAtReset(void) {
+static void __attribute__((unused))  USB_InitAtReset(void) {
 
 }
 
@@ -670,7 +670,7 @@ ClockConfiguration_t clockconf;
      *    * USB Suspend
      */
     uint32_t gintmsk = USB->GINTMSK;
-
+    (void) gintmsk;
 
 
     /*
@@ -693,6 +693,8 @@ ClockConfiguration_t clockconf;
     if( (conf&USB_CONF_DEBUG) == 0 ) {
         USB->GINTSTS &= USB_GINTSTS_SOF;
     }
+
+    return 0;
 }
 
 
@@ -730,7 +732,7 @@ void USB_Stop(void) {
  *
  */
 
-static void USB_PowerDown(void) {
+static void __attribute__((unused)) USB_PowerDown(void) {
 
     // TBD
 
@@ -1112,7 +1114,6 @@ uint32_t enabledints;
         enabledints &= ~USB_GINTSTS_OEPINT;
     }
 
-    int x = 0;
     /*
      * Exiting IRQ Handler
      */

@@ -2,17 +2,17 @@
 #define USB_CONFIG_H
 /**
  * @file usb_config.h
- * 
+ *
  * @brief General USB Configuration parameters
- * 
- * 
+ *
+ *
  * @author Hans
- * @brief 
+ * @brief
  * @version 0.1
  * @date 2021-11-30
- * 
+ *
  * @copyright Copyright (c) 2021
- * 
+ *
  */
 #include <stdint.h>
 #include "usb_packets.h"
@@ -20,7 +20,7 @@
 
 /**
  * @brief  USB_NUM_ENDPOINTS_USED
- * 
+ *
  * @note   Must include the control endpoints (0)
  */
 #ifndef USB_NUM_ENDPOINTS_USED
@@ -29,7 +29,7 @@
 
 /**
  * @brief Vendor ID
- * 
+ *
  * @note  For now, use Silicon Labs (?)
  */
 
@@ -41,7 +41,7 @@
 /**
  * @brief Product ID
  *
- * @note  For now, use 1 
+ * @note  For now, use 1
  */
 
 #ifndef USB_PRODUCTID
@@ -52,7 +52,7 @@
 /**
  * @brief Device ID
  *
- * @note  For now, use 1 
+ * @note  For now, use 1
  */
 
 #ifndef USB_DEVICEID
@@ -62,24 +62,24 @@
 
 /**
  * @brief Configuration for USB
- * 
-/**
- * @note  Define USB_IMPLEMENTS_GPIO_IRQ_ROUTINE to force the implementation 
- *        of the GPIO IRQ routine in this module. 
+ *
+ *
+ * @note  Define USB_IMPLEMENTS_GPIO_IRQ_ROUTINE to force the implementation
+ *        of the GPIO IRQ routine in this module.
  *       Comment out this definition if it is implemented elsewhere
  */
 //#define USB_IMPLEMENTS_GPIO_IRQ_ROUTINE     (1)
 /**
  * @brief Define USB_VBUSEN when using OTG
- * 
+ *
  * @note  It can be defined too when using USB as a device
- * 
+ *
  */
 #define USB_USE_VBUSEN                      (1)
 
 /**
  * @brief Features of the USB interface on the EFM32
- * 
+ *
  */
 ///@{
 #define USB_CORECLOCKFREQUENCY              (48000000)

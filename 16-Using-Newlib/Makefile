@@ -242,9 +242,9 @@ INCLUDEPATH= ${CMSISDEVINCDIR} ${CMSISINCDIR}
 AFLAGS=                                             \
             ${CPUFLAGS}                             \
             ${FPUFLAGS}                             \
+            ${CERRORFLAGS}                          \
             ${addprefix -I ,${INCLUDEPATH}}         \
             ${ASECTIONS}                            \
-
 
 #
 # The flags passed to the compiler.
@@ -252,6 +252,7 @@ AFLAGS=                                             \
 CFLAGS=                                             \
             ${CPUFLAGS}                             \
             ${FPUFLAGS}                             \
+            ${CERRORFLAGS}                          \
             ${addprefix -I ,${INCLUDEPATH}}         \
             ${CSECTIONS}                            \
             -D${PART}                               \
@@ -761,7 +762,7 @@ endif
 # Ozone does not use GDBPROXY!!!
 ozone: ${OBJDIR}/${PROGNAME}.bin
 	echo "Ozone does not use GDB Proxy"
-	${OZONE} ozone  -usb -if swd -device ${PART} -programfile ${OBJDIR}/${PROGNAME}.axf 
+	${OZONE} ozone  -usb -if swd -device ${PART} -programfile ${OBJDIR}/${PROGNAME}.axf
 
 #
 # Start GDB proxy
@@ -875,7 +876,7 @@ stack-usage: ${OBJDIR}/${PROGNAME}.axf
 	cd ${OBJDIR} && \
 	find . -name '*.cgraph' | grep -v stack-usage-log | xargs cat > stack-usage-log.cgraph && \
 	find . -name '*.su'     | grep -v stack-usage-log | xargs cat > stack-usage-log.su && \
-	${STACKUSAGE}  --csv stack-usage.csv 
+	${STACKUSAGE}  --csv stack-usage.csv
 
 
 #

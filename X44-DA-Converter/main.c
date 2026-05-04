@@ -130,5 +130,6 @@ int main(void) {
         DAC_SetOutput(VMAX/2,VMAX/2);
         c = getchar();
         DAC_SetOutput(VMAX,0);
+        (void) c;
     }
 }

@@ -96,7 +96,7 @@ unsigned m = 1<<(n-1);
 
 int main(void) {
 
-char s[10];
+
     
     /* Configure LEDs */
     LED_Init(LED2);
@@ -126,7 +126,7 @@ char s[10];
     //LCD_ClearAll();
     Delay(DELAYVAL);
 
-    s[0] = 0;
+
     //LCD_WriteString(s);
 
     //LCD_WriteString("hello");
@@ -145,6 +145,8 @@ char s[10];
     unsigned val = 0;
     while (1) {
     #if 0
+        char s[10];
+        s[0] = 0;
         printf("Enter new value: ");
         fgets(s,9,stdin);
         if( s[0] == '\n' ) continue;
@@ -152,10 +154,11 @@ char s[10];
         val = (unsigned) atoi(s);
     #endif
         // LED_Toggle(LED1);
-        printf("counter=%5X status=%5X value=%5X top=%5X\n",TIMER3->CNT,
-                        TIMER3->STATUS,
-                        TIMER3->CC[2].CCV,
-                        TIMER3->TOP);
+        printf("counter=%5X status=%5X value=%5X top=%5X\n",
+                        (unsigned) TIMER3->CNT,
+                        (unsigned) TIMER3->STATUS,
+                        (unsigned) TIMER3->CC[2].CCV,
+                        (unsigned) TIMER3->TOP);
      //   PWM_Write(TIMER3,2,val);
      //   PWM_Start(TIMER3);
         if( cnt-- == 0 ) {
@@ -169,6 +172,8 @@ char s[10];
     }
 
 }
+
+
 
 
 

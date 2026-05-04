@@ -107,7 +107,6 @@ void UART_Reset(void) {
  */
 
 void UART_Init(void) {
-uint32_t bauddiv;
 
     /* Enable Clock for GPIO and UART */
     CMU->HFPERCLKDIV |= CMU_HFPERCLKDIV_HFPERCLKEN;     // Enable HFPERCLK

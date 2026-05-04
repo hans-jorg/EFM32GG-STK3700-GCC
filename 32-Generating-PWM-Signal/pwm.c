@@ -46,9 +46,9 @@
 
 /**
  * @brief  Maximal value for timer
- * 
+ *
  * @note   Duty cycle is set as a fraction of this value
- * 
+ *
  * @note   Maximal value must be less or equal to 0xFFFF.
  *         It is a 16 bit value
  */
@@ -56,7 +56,7 @@
 
 /**
  * @brief    List of Timers
- * 
+ *
  * @note     A null terminated list used to find the index
  */
 
@@ -68,14 +68,15 @@ static TIMER_TypeDef *timerlist[] = {
     0
 };
 
-static const int NumberOfTimers = sizeof(timerlist)/sizeof(TIMER_TypeDef *)-1;
+static const __attribute__((unused))
+int NumberOfTimers = sizeof(timerlist)/sizeof(TIMER_TypeDef *)-1;
 
 /**
  * @brief  Initialization flags
- * 
+ *
  * @note   Index of timer is an integer (TIMER0 -> 0, TIMER1 -> 1 and so on)
- * 
- * @note   Index of channel bit is calculated by the formula 
+ *
+ * @note   Index of channel bit is calculated by the formula
  *         $$ index = (t*4)+c $$
  */
 static uint8_t timer_initialized = 0;
@@ -210,9 +211,9 @@ void PWM_Stop(TIMER_TypeDef* timer) {
 
 /**
  * @brief  FindTimerIndex
- * 
- * @param timer 
- * @return int 
+ *
+ * @param timer
+ * @return int
  */
 
 static inline int FindTimerIndex(TIMER_TypeDef *timer) {
@@ -295,7 +296,7 @@ int m;
  *      | ....     | .....   |
  *      |  1024    |    10   |
  *
- * @note    It rounds to the nearest higher power of 2. 
+ * @note    It rounds to the nearest higher power of 2.
  *          3 returns 2 (=2^2), 11 returns 4 (2^4) and so on.
  */
 
@@ -427,12 +428,12 @@ unsigned gpion,pinn;
         gpio->MODEH = (gpio->MODEH&~(0xF<<ppos))|(PINMODE<<ppos);
     }
 
-    /* Disable all interrupts. They will be set later when configuring 
+    /* Disable all interrupts. They will be set later when configuring
        the channel
      */
     timer->IEN &= ~(TIMER_IEN_CC0|TIMER_IEN_CC1|TIMER_IEN_CC2);
 
-    /* Set initialization flag */ 
+    /* Set initialization flag */
     timer_initialized |= (1<<t);
 
     return 0;
@@ -440,12 +441,12 @@ unsigned gpion,pinn;
 
 /**
  * @brief PWM_ConfigChannel
- * 
- * @param timer 
- * @param channel 
- * @param location 
- * @param params 
- * @return int 
+ *
+ * @param timer
+ * @param channel
+ * @param location
+ * @param params
+ * @return int
  */
 
 int
@@ -467,23 +468,23 @@ static const uint32_t ientable[] = {TIMER_IEN_CC0,TIMER_IEN_CC1,TIMER_IEN_CC2};
     timer->CC[channel].CCVB = MAXTIMER;
     timer->CC[channel].CCV  = MAXTIMER;
 
-    
+
     /* Configure polarity of channel output */
     if( params&PWM_PARAMS_ENABLEINVERTPOL ) {
         timer->CC[channel].CTRL |= TIMER_CC_CTRL_OUTINV;
     } else {
         timer->CC[channel].CTRL &= ~TIMER_CC_CTRL_OUTINV;
     }
-    
+
     /* Configure channel interrupts */
     if( params&PWM_PARAMS_ENABLEINTERRUPT ) {
         timer->IEN |= ientable[channel];
     } else {
         timer->IEN &= ~ientable[channel];
     }
-   
+
     /* Configure channel */
-    timer->CC[channel].CTRL = 
+    timer->CC[channel].CTRL =
                 0// TIMER_CC_CTRL_ICEVCTRL_RISING  // increment on rising edge
                 //|TIMER_CC_CTRL_ICEDGE_RISING    // increment on rising edge
                 |TIMER_CC_CTRL_COFOA_CLEAR      // reset on overflow
@@ -502,7 +503,7 @@ static const uint32_t ientable[] = {TIMER_IEN_CC0,TIMER_IEN_CC1,TIMER_IEN_CC2};
 
  * @param    timer Pointer to timer as defined by the efm32gg headers (em_device.h *)
  *
- * @param    location location used for pins as defined in Table 4.2. Alternate 
+ * @param    location location used for pins as defined in Table 4.2. Alternate
  *           functionality overview of datasheet
  *
  * @param    params  OR of the following values
@@ -518,7 +519,7 @@ static const uint32_t ientable[] = {TIMER_IEN_CC0,TIMER_IEN_CC1,TIMER_IEN_CC2};
  */
 
 int PWM_Init(TIMER_TypeDef* timer, int loc, unsigned params ) {
-static const uint32_t pinenable[] = { 
+static const uint32_t pinenable[] = {
     // To avoid switch or nested if. Could be replaced by 1<<channel.
     TIMER_ROUTE_CC0PEN,
     TIMER_ROUTE_CC1PEN,

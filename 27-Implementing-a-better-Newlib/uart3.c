@@ -64,12 +64,13 @@ const uint32_t OVERSAMPLING = 16;
  *  @note   GPIO Port E is used for UART0 RX/TX on STK3700 board
  *          GPIO Port F used for enable transceiver for UART0 on the STK3700 board
  */
-static GPIO_P_TypeDef * const GPIOA = &(GPIO->P[0]);    // GPIOE
-static GPIO_P_TypeDef * const GPIOB = &(GPIO->P[1]);    // GPIOE
-static GPIO_P_TypeDef * const GPIOC = &(GPIO->P[2]);    // GPIOE
-static GPIO_P_TypeDef * const GPIOD = &(GPIO->P[3]);    // GPIOE
-static GPIO_P_TypeDef * const GPIOE = &(GPIO->P[4]);    // GPIOE
-static GPIO_P_TypeDef * const GPIOF = &(GPIO->P[5]);    // GPIOF
+#define UNUSED  __attribute__((unused))
+static UNUSED  GPIO_P_TypeDef * const GPIOA = &(GPIO->P[0]);    // GPIOE
+static UNUSED  GPIO_P_TypeDef * const GPIOB = &(GPIO->P[1]);    // GPIOE
+static UNUSED  GPIO_P_TypeDef * const GPIOC = &(GPIO->P[2]);    // GPIOE
+static UNUSED  GPIO_P_TypeDef * const GPIOD = &(GPIO->P[3]);    // GPIOE
+static UNUSED  GPIO_P_TypeDef * const GPIOE = &(GPIO->P[4]);    // GPIOE
+static UNUSED  GPIO_P_TypeDef * const GPIOF = &(GPIO->P[5]);    // GPIOF
 
 
 

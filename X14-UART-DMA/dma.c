@@ -655,7 +655,7 @@ static inline void DMA_Disable(void) { DMA->CONFIG = 0; }
  * @note    Reset DMA by
  */
 
-int DMA_Reset(void) {
+void DMA_Reset(void) {
 int i;
 const uint32_t channelsmask = (1<<NDMACHANNELS)-1;
     DMA_Disable();
@@ -710,7 +710,7 @@ const uint32_t channelsmask = (1<<NDMACHANNELS)-1;
  */
 
 
-int DMA_Init(uint32_t config) {
+void DMA_Init(uint32_t config) {
 
     /* Reset DMA */
     DMA_Reset();
@@ -722,7 +722,7 @@ int DMA_Init(uint32_t config) {
     DMA->CTRLBASE = (uint32_t) dma_descriptors;
 
     DMA_Enable();
-    return 0;
+    return;
 }
 
 
@@ -800,7 +800,8 @@ DMA_CH_TypeDef *pchconfig;
 
     pchannelconfig = &channelconfig[chnopnd];
     pchannelinfo = &channelinfo[chn];
-
+    (void) pchannelinfo;  // Shut up
+    
     pdesc = &dma_descriptors[chn];
     pchconfig = &(DMA->CH[chn]);
 

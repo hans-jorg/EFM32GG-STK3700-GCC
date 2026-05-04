@@ -239,18 +239,19 @@ INCLUDEPATH= ${CMSISDEVINCDIR} ${CMSISINCDIR}
 # The flags passed to the assembler.
 #
 AFLAGS=                                             \
-            ${CPUFLAGS}                             \
-            ${FPUFLAGS}                             \
+            ${CPUFLAGS}                        \
+            ${FPUFLAGS}                 \
+            ${CERRORFLAGS}      \
             ${addprefix -I ,${INCLUDEPATH}}         \
             ${ASECTIONS}                            \
-
 
 #
 # The flags passed to the compiler.
 #
 CFLAGS=                                             \
-            ${CPUFLAGS}                             \
-            ${FPUFLAGS}                             \
+            ${CPUFLAGS}                        \
+            ${FPUFLAGS}                 \
+            ${CERRORFLAGS}      \
             ${addprefix -I ,${INCLUDEPATH}}         \
             ${CSECTIONS}                            \
             -D${PART}                               \
@@ -730,7 +731,7 @@ endif
 # Ozone does not use GDBPROXY!!!
 ozone: ${OBJDIR}/${PROGNAME}.bin
 	echo "Ozone does not use GDB Proxy"
-	${OZONE} ozone  -usb -if swd -device ${PART} -programfile ${OBJDIR}/${PROGNAME}.axf 
+	${OZONE} ozone  -usb -if swd -device ${PART} -programfile ${OBJDIR}/${PROGNAME}.axf
 
 #
 # Start GDB proxy

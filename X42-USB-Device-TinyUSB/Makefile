@@ -254,11 +254,11 @@ INCLUDEPATH= ${CMSISDEVINCDIR} ${CMSISINCDIR} ${TUINCDIR}
 # The flags passed to the assembler.
 #
 AFLAGS=                                             \
-            ${CPUFLAGS}                             \
+           ${CPUFLAGS}                             \
             ${FPUFLAGS}                             \
+            ${CERRORFLAGS}                          \
             ${addprefix -I ,${INCLUDEPATH}}         \
             ${ASECTIONS}                            \
-
 
 #
 # The flags passed to the compiler.
@@ -266,7 +266,7 @@ AFLAGS=                                             \
 CFLAGS=                                             \
             ${CPUFLAGS}                             \
             ${FPUFLAGS}                             \
-            ${TUFLAGS}                              \
+            ${CERRORFLAGS}                          \
             ${addprefix -I ,${INCLUDEPATH}}         \
             ${CSECTIONS}                            \
             -D${PART}                               \

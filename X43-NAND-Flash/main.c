@@ -6,6 +6,7 @@
 
 #include <stdint.h>
 #include <stdio.h>
+#include <string.h>
 /*
  * Including this file, it is possible to define which processor using command line
  * E.g. -DEFM32GG995F1024
@@ -16,6 +17,7 @@
 #include "clock_efm32gg_ext.h"
 
 #include "led.h"
+#include "nand-flash.h"
 
 
 //void UART0_TX_IRQHandler(void);
@@ -50,7 +52,9 @@ uint64_t l = tick+delay;
 
 }
 
-
+uint8_t spare[NAND_SPARESIZE];
+uint8_t signature[4];
+uint8_t page[NAND_PAGESIZE];
 /**************************************************************************//**
  * @brief  Main function
  *
@@ -61,14 +65,17 @@ uint64_t l = tick+delay;
  */
 
 int main(void) {
-char line[100];
-int tryn = 0;
+//char line[100];
+uint32_t addr;
+int i;
+int32_t rc;
+uint32_t s;
 
     /* Configure LEDs */
     LED_Init(LED1|LED2);
 
     // Set clock source to external crystal: 48 MHz
-    (void) SystemCoreClockSet(CLOCK_HFXO,1,1);
+    //(void) SystemCoreClockSet(CLOCK_HFXO,1,1);
 
     /* Turn on LEDs */
     LED_Write(0,LED1|LED2);
@@ -78,10 +85,55 @@ int tryn = 0;
 
     __enable_irq();
 
-    printf("Hello\n");
-    while (1) {
-        putchar('+');
-        Delay(100);
+    printf("Initializing NAND Flash\n");
+    rc = NAND_Init();
+    if( rc != 0 ) {
+        printf("Error at initialization\n");
+        //goto error;
     }
+    s = NAND_Status();
+    printf("Status = %02lX\n",s);
 
+    NAND_DisableWriteProtect();
+    s = NAND_Status();
+    printf("Status = %02lX\n",s);
+
+    NAND_EnableWriteProtect();
+    s = NAND_Status();
+    printf("Status = %02lX\n",s);
+
+
+    rc = NAND_ReadSignature(signature, 4);
+    if( rc != 0 ) {
+        printf("Error when reading signature\n");
+       // goto error;
+    }
+    printf("Signature = %02X%02X\n",signature[0],signature[1]);
+
+    int errors = 0;
+    putchar('\n');
+    for(addr=0;addr<NAND_MAXADDRESS;addr+=NAND_PAGESIZE) {
+        printf("\rReading spare at address %08lX",addr);
+        memset(spare,0xAA,NAND_SPARESIZE);
+        rc = NAND_ReadSpare(addr, spare, NAND_SPARESIZE);
+        if( rc == 0 ) {
+            printf("\nError when reading spare area\n");
+            //goto error;
+        }
+        int err = 0;
+        for(i=0;i<NAND_SPARESIZE;i++) {
+            if( spare[i] != 0xFF ) {
+                err++;
+                printf(" [%d]=%02X",i,spare[i]);
+            }
+        }
+        if( err ) {
+            putchar('\n');
+            errors++;
+        }
+        //Delay(2000);
+    }
+    printf("\nPages with errors: %d\n",errors);
+//error:
+    while(1) {} // Stop here !!!!!!
 }

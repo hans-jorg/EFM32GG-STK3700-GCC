@@ -54,14 +54,16 @@ uint64_t lim = tick+delay;
 
 
 
-static void fill_increasing(uint8_t *a, uint8_t c, size_t size) {
+static void __attribute__((unused))
+fill_increasing(uint8_t *a, uint8_t c, size_t size) {
 uint8_t *lim = a+size;
 
     while( a < lim )  *a++ = c++;
 
 }
 
-static int test_increasing(uint8_t *a, uint8_t c, size_t size) {
+static int __attribute__((unused))
+test_increasing(uint8_t *a, uint8_t c, size_t size) {
 uint8_t *lim = a+size;
 
     while( (a < lim) && (*a==c) ) {
@@ -72,14 +74,16 @@ uint8_t *lim = a+size;
     return a == lim;
 }
 
-static int fill_constant(uint8_t *a, uint8_t c, size_t size) {
+static void __attribute__((unused))
+fill_constant(uint8_t *a, uint8_t c, size_t size) {
 uint8_t *lim = a+size;
 
     while( a < lim )  *a++ = c;
 
 }
 
-static int test_constant(uint8_t *a, uint8_t c, size_t size) {
+static int __attribute__((unused))
+test_constant(uint8_t *a, uint8_t c, size_t size) {
 uint8_t *lim = a+size;
 
     while( (a < lim) && (*a==c) ) a++;
@@ -101,34 +105,33 @@ uint8_t area2[AREASIZE+2]; // 2 guard positions, one before and other after
 
 void Check(unsigned ch) {
 DMA_DESCRIPTOR_TypeDef *pDesc = GetPrimaryDescriptor(ch);
-unsigned pch = ch&0xF;
 
-    printf("STATUS                  = %08x\n",DMA->STATUS);
-    printf("ERRORC                  = %08x\n",DMA->ERRORC);
-    printf("CONFIG                  = %08x\n",DMA->CONFIG);
-    printf("CHENS                   = %08x\n",DMA->CHENS);
-    printf("IF                      = %08x\n",DMA->IF);
-    printf("IFC                     = %08x\n",DMA->IFC);
-    printf("CHREQMASKS              = %08x\n",DMA->CHREQMASKS);
-    printf("CHREQSTATUS             = %08x\n",DMA->CHREQSTATUS);
-    printf("CHWAITSTATUS            = %08x\n",DMA->CHWAITSTATUS);
 
-    printf("CHx_CTRL                = %08X\n",DMA->CH[ch&0xF].CTRL);
-    printf("Description Source      = %08x\n",pDesc->SRCEND);
-    printf("Description Destination = %08x\n",pDesc->DSTEND);
-    printf("Description User        = %08x\n",pDesc->USER);
-    printf("Description Control     = %08x\n",pDesc->CTRL);
+    printf("STATUS                  = %08x\n",(unsigned) DMA->STATUS);
+    printf("ERRORC                  = %08x\n",(unsigned) DMA->ERRORC);
+    printf("CONFIG                  = %08x\n",(unsigned) DMA->CONFIG);
+    printf("CHENS                   = %08x\n",(unsigned) DMA->CHENS);
+    printf("IF                      = %08x\n",(unsigned) DMA->IF);
+    printf("IFC                     = %08x\n",(unsigned) DMA->IFC);
+    printf("CHREQMASKS              = %08x\n",(unsigned) DMA->CHREQMASKS);
+    printf("CHREQSTATUS             = %08x\n",(unsigned) DMA->CHREQSTATUS);
+    printf("CHWAITSTATUS            = %08x\n",(unsigned) DMA->CHWAITSTATUS);
 
-    printf("enabled_channels        = %08x\n",enabled_channels);
-    printf("done_channels           = %08x\n",done_channels);
-    printf("error_channels          = %08x\n",error_channels);
+    printf("CHx_CTRL                = %08X\n",(unsigned) DMA->CH[ch&0xF].CTRL);
+    printf("Description Source      = %08x\n",(unsigned) pDesc->SRCEND);
+    printf("Description Destination = %08x\n",(unsigned) pDesc->DSTEND);
+    printf("Description User        = %08x\n",(unsigned) pDesc->USER);
+    printf("Description Control     = %08x\n",(unsigned) pDesc->CTRL);
+
+    printf("enabled_channels        = %08x\n",(unsigned) enabled_channels);
+    printf("done_channels           = %08x\n",(unsigned) done_channels);
+    printf("error_channels          = %08x\n",(unsigned) error_channels);
 
 }
 
 
 int main(void) {
 char line[100];
-int tryn = 0;
 int rc;
 
     /* Configure LEDs */

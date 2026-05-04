@@ -698,7 +698,6 @@ int DMA_SetupTransferMemToMem_32(unsigned ch, uint32_t *src, uint32_t *dst, unsi
  *  @brief  Start Transfer in channel *ch*
  */
 int DMA_StartTransfer(unsigned ch) {
-DMA_DESCRIPTOR_TypeDef *pDesc = &DMA_DescriptorTable[ch];
 
     uint32_t chmask = GenerateChannelMask(ch);
 
@@ -756,7 +755,6 @@ DMA_DESCRIPTOR_TypeDef *pDesc = &DMA_DescriptorTable[ch];
  */
 
 int  DMA_ConfigureDescriptor(unsigned ch, unsigned size, unsigned inc, void *src, void *dst, unsigned number) {
-uint32_t control;
 uint32_t sc;
 const uint32_t cycle = DMA_CTRL_CYCLE_CTRL_AUTO;
 

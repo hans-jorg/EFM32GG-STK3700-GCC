@@ -247,9 +247,9 @@ INCLUDEPATH= $(PROTOTHREADDIR) ${CMSISDEVINCDIR} ${CMSISINCDIR}
 AFLAGS=                                             \
             ${CPUFLAGS}                             \
             ${FPUFLAGS}                             \
+            ${CERRORFLAGS}                          \
             ${addprefix -I ,${INCLUDEPATH}}         \
             ${ASECTIONS}                            \
-
 
 #
 # The flags passed to the compiler.
@@ -257,23 +257,10 @@ AFLAGS=                                             \
 CFLAGS=                                             \
             ${CPUFLAGS}                             \
             ${FPUFLAGS}                             \
+            ${CERRORFLAGS}                          \
             ${addprefix -I ,${INCLUDEPATH}}         \
             ${CSECTIONS}                            \
             -D${PART}                               \
-
-#
-# To generate map output file
-#
-MAPFLAGS=  -Map,${OBJDIR}/${PROGNAME}.map
-
-#
-# The flags passed to the linker.
-#
-# For now only one parameter when using gcc to link
-#
-LDFLAGS=                                            \
-            ${LSECTIONS}                            \
-            ${MAPFLAGS}                             \
 
 
 #

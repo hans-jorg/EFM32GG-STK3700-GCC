@@ -41,9 +41,11 @@ volatile uint32_t counter;
 int i;
 
     for(i=0;i<delay;i++) {
+
         counter = 1000000;
         while( counter ) counter--;
     }
+
 }
 
 /**
@@ -57,7 +59,8 @@ int i;
 
 #define GPIO_ALTERNATE_OPERATIONS
 
-
+// To avoid messages for unused const variables!!!
+#define CONST static const __attribute__((unused)) 
 /**
  * @brief   Pointer to GPIO registers
  */
@@ -67,12 +70,12 @@ typedef GPIO_P_TypeDef *GPIO_t;
  * @brief   Pointers for GPIO ports
  */
 //@{
-static const GPIO_t GPIOA = &(GPIO->P[0]);  // GPIOA
-static const GPIO_t GPIOB = &(GPIO->P[1]);  // GPIOB
-static const GPIO_t GPIOC = &(GPIO->P[2]);  // GPIOC
-static const GPIO_t GPIOD = &(GPIO->P[3]);  // GPIOD
-static const GPIO_t GPIOE = &(GPIO->P[4]);  // GPIOE
-static const GPIO_t GPIOF = &(GPIO->P[5]);  // GPIOF
+CONST GPIO_t GPIOA = &(GPIO->P[0]);  // GPIOA
+CONST GPIO_t GPIOB = &(GPIO->P[1]);  // GPIOB
+CONST GPIO_t GPIOC = &(GPIO->P[2]);  // GPIOC
+CONST GPIO_t GPIOD = &(GPIO->P[3]);  // GPIOD
+CONST GPIO_t GPIOE = &(GPIO->P[4]);  // GPIOE
+CONST GPIO_t GPIOF = &(GPIO->P[5]);  // GPIOF
 //@}
 
 
@@ -81,23 +84,25 @@ static const GPIO_t GPIOF = &(GPIO->P[5]);  // GPIOF
 /**
  * @brief   mode options
  */
+
 //@{
-static const uint32_t GPIO_MODE_DISABLE                           =   0x0;
-static const uint32_t GPIO_MODE_INPUT                             =   0x1;
-static const uint32_t GPIO_MODE_INPUTPULL                         =   0x2;
-static const uint32_t GPIO_MODE_INPUTPULLFILTER                   =   0x3;
-static const uint32_t GPIO_MODE_PUSHPULL                          =   0x4;
-static const uint32_t GPIO_MODE_PUSHPULLDRIVE                     =   0x5;
-static const uint32_t GPIO_MODE_WIREDOR                           =   0x6;
-static const uint32_t GPIO_MODE_WIREDORPULLDOWN                   =   0x7;
-static const uint32_t GPIO_MODE_WIREDAND                          =   0x8;
-static const uint32_t GPIO_MODE_WIREDANDFILTER                    =   0x9;
-static const uint32_t GPIO_MODE_WIREDANDPULLUP                    =   0xA;
-static const uint32_t GPIO_MODE_WIREDANDPULLUPFILTER              =   0xB;
-static const uint32_t GPIO_MODE_WIREDANDDRIVE                     =   0xC;
-static const uint32_t GPIO_MODE_WIREDANDDRIVEFILTER               =   0xD;
-static const uint32_t GPIO_MODE_WIREDANDDRIVEPULLUP               =   0xE;
-static const uint32_t GPIO_MODE_WIREDANDDRIVEPULLUPFILTER         =   0xF;
+CONST uint32_t    GPIO_MODE_DISABLE                           =   0x0;
+CONST uint32_t    GPIO_MODE_INPUT                             =   0x1;
+CONST uint32_t    GPIO_MODE_INPUTPULL                         =   0x2;
+CONST uint32_t    GPIO_MODE_INPUTPULLFILTER                   =   0x3;
+CONST uint32_t    GPIO_MODE_PUSHPULL                          =   0x4;
+CONST uint32_t    GPIO_MODE_PUSHPULLDRIVE                     =   0x5;
+CONST uint32_t    GPIO_MODE_WIREDOR                           =   0x6;
+CONST uint32_t    GPIO_MODE_WIREDORPULLDOWN                   =   0x7;
+CONST uint32_t    GPIO_MODE_WIREDAND                          =   0x8;
+CONST uint32_t    GPIO_MODE_WIREDANDFILTER                    =   0x9;
+CONST uint32_t    GPIO_MODE_WIREDANDPULLUP                    =   0xA;
+CONST uint32_t    GPIO_MODE_WIREDANDPULLUPFILTER              =   0xB;
+CONST uint32_t    GPIO_MODE_WIREDANDDRIVE                     =   0xC;
+CONST uint32_t    GPIO_MODE_WIREDANDDRIVEFILTER               =   0xD;
+CONST uint32_t    GPIO_MODE_WIREDANDDRIVEPULLUP               =   0xE;
+CONST uint32_t    GPIO_MODE_WIREDANDDRIVEPULLUPFILTER         =   0xF;
+
 //@}
 
 

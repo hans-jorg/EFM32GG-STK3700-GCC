@@ -9,18 +9,20 @@ There are basically two types of flash memory devices:
 * NAND Flash devices
 * NOR Flash devices
 
-The main difference is the interface. NAND Flash device are suited for parallel access, demanding
- more pins and delivering higher speed. NOR devices, generally, have a serial interface,
- typically SD, that is a development of SPI.
+The main difference is the interface. NAND Flash device are suited for parallel
+access, demanding  more pins and delivering higher speed. NOR devices,
+generally, have a serial interface, typically SD, which is a development of SPI.
 
-Another very important difference is the successibilty of error in NAND Flash devices. Most of them
-come with some regions marked as deffective. In some cases, a test must be done to mark these
-regions at initialization. But it can be worse. Some deffects can appears during the life time, even
-when at a number of write operations below the specified value. This errors must be handled and
-the system must copy its contents to a new region and mark the region with errors as deffective.
+Another very important difference is the susceptibility of error in NAND Flash
+devices. Most of them come with some regions marked as defective. In some
+cases, a test must be done to mark these regions at initialization. But it can
+be worse. Some defects can appears during the life time, even when at a number
+of write operations below the specified value. This errors must be handled and
+the system must copy its contents to a new region and mark the region with
+errors as defective.
 
-Summarizing.
-
+Summarizing, the table below show the main features of both types of Flash
+memories.
 
 | Characteristic      |  NAND flash                | NOR flash                 |
 |---------------------|----------------------------|---------------------------|
@@ -35,7 +37,7 @@ Summarizing.
 * May be slowed by serial access
 
 
-> One feature of Flash devices is that it is possible to change a bit 1 to a 0, but to change from 0 to 1, an erase operation is needed.
+> One feature of Flash devices is that it is possible to change a bit from 1 to a 0, but to change from 0 to 1, an erase operation is needed and it generally erase a large ares..
 
 On NAND Flash, the erase operation must be done on a large chunk of bits, generally called block.
 
@@ -120,6 +122,17 @@ There are four memory regions used by the EBI.
 The corresponding code regions are the same as above.
 
 Except for NAND Flash, the EDI can handle the Wait/Acknowledge pin of an external device. This is configured in the EBI_CTRL register.
+
+There are four sets of registers as show below, one for each region.
+But it is possible to use the parameters of Region 0 for all other regions
+when the ITS bit is set to 0.
+
+| Bank 0 or all    | Bank 1           | Bank 2            | Bank 3            |
+|------------------|------------------|-------------------|-------------------|
+| EBI_ADDRTIMING   | EBI_ADDRTIMING1  | EBI_ADDRTIMING2   | EBI_ADDRTIMING3   |
+| EBI_RDTIMING     | EBI_RDTIMING1    | EBI_RDTIMING2     | EBI_RDTIMING3     |
+| EBI_WRTIMING     | EBI_WRTIMING1    | EBI_WRTIMING2     | EBI_WRTIMING3     |
+
 
 ### NAND Flash Support
 

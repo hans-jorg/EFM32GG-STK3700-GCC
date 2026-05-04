@@ -262,9 +262,11 @@ int c;
             if(n) {
                 p--;
                 n--;
-            }
-            putchar(BS);
-            continue;
+                putchar(BS);
+                putchar(' ');
+                putchar(BS);
+                continue;
+                }
         }
         putchar(c);
         if( n > 0 ) {

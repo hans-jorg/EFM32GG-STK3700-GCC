@@ -2,21 +2,21 @@
 #define USB_DESCRIPTORS_H
 /**
  * @file usb_descriptors.h
- * 
+ *
  * @brief USB Descriptors
- * 
+ *
  * @note  According USB Complete of Jan Axelson
- * 
+ *
  * @note  The structs must be packed. I.e., with internal padding.
  *
- * 
+ *
  * @author Hans
- * @brief 
+ * @brief
  * @version 0.1
  * @date 2021-11-30
- * 
+ *
  * @copyright Copyright (c) 2021
- * 
+ *
  */
 #include <stdint.h>
 #include "usb_packets.h"
@@ -24,31 +24,31 @@
 
 /**
  * @brief General format of descriptors
- * 
+ *
  */
 struct PACKED USB_GeneralDescriptor {
     uint8_t     bLength;            // Descriptor size in bytes
-    uint8_t     bType;              // 
+    uint8_t     bType;              //
     //....
 };
 
 
 /**
  * @brief Device Descriptor
- * 
+ *
  * @note  See symbols for bcdUSB below
- * 
+ *
  * @note  See symbols for DeviceClass below
- * 
+ *
  * @note bMaxPacketSize0
- * 
+ *
  *   | Speed | bMaxPacketSize0                  |
  *   |-------|----------------------------------|
  *   | Low   |     8                            |
  *   | Full  |     8, 16, 32 or 64              |
  *   | High  |     64                           |
  *   | Super |     512                          |
- *    
+ *
  *  For SuperSpeed, size is 2^bMaxPacketSize0 and the field must be set to 9.
  */
 
@@ -65,14 +65,14 @@ struct PACKED USB_GeneralDescriptor {
     uint16_t     bcdDevice;         // Device release number (BCD)
     uint8_t      iManufacturer;     // Index of string descriptor for the manufacturer
     uint8_t      iProduct;          // Index of string descriptor for the product
-    uint8_t      iSerialNumber;     // 
+    uint8_t      iSerialNumber;     //
     uint8_t      bNumConfigurations;// Number of possible configurations
 };
 
 
 /**
  * @brief Device Qualifier Descriptor
- * 
+ *
  */
 struct PACKED USB_DeviceQualifierDescriptor {
     uint8_t      bLength;           // Descriptor size in bytes (10)
@@ -89,25 +89,25 @@ struct PACKED USB_DeviceQualifierDescriptor {
 
 /**
  * @brief Configuration Descriptor
- * 
+ *
  * @note  It is the header of set of descriptors like
- * 
+ *
  *        * Interface Descriptor for Interface #0
  *          - Endpoint Descriptor #1
  *          - Endpoint Descriptor #2
  *        * Interface Descriptor for Interface #1
  *          - HID Descriptor
  *          - Endpoint Descriptor #1
- * 
- * @note  From "USB in a Nutshell": When the configuration descriptor is read, 
- *        it returns the entire configuration hierarchy which includes all 
- *        related interface and endpoint descriptors. The wTotalLength field 
+ *
+ * @note  From "USB in a Nutshell": When the configuration descriptor is read,
+ *        it returns the entire configuration hierarchy which includes all
+ *        related interface and endpoint descriptors. The wTotalLength field
  *        reflects the number of bytes in the hierarchy.
- * 
+ *
  * @note  bmAttributes
  *          6: Self-Powered
  *          5: Remote Wake-up
- * 
+ *
  * @note  bMaxPower is expressed in 2 mA units.
  *        50 corresponds to 50*2=100 mA
  */
@@ -119,12 +119,12 @@ struct PACKED USB_ConfigurationDescriptor {
     uint8_t      bConfigurationValue;//Identifier for Set Configuration and Get Configuration requests
     uint8_t      iConfiguration;     // Index of string descriptor for the configuration
     uint8_t      bmAttributes;       // Self/bus power and remote wakeup settings
-    uint8_t      bMaxPower;           // Bus power required in units of 2 mA (USB 2.0) or 8 mA (SuperSpeed).
+    uint8_t      bMaxPower;          // Bus power required in units of 2 mA (USB 2.0) or 8 mA (SuperSpeed).
 };
 
 /**
  * @brief Other Speed Descriptors
- * 
+ *
  */
 struct PACKED USB_OtherSpeedDescriptor {
     uint8_t      bLength;           // Descriptor size in bytes (9)
@@ -140,7 +140,7 @@ struct PACKED USB_OtherSpeedDescriptor {
 
 /**
  * @brief Interface Association Descriptor
- * 
+ *
  */
 struct PACKED USB_InterfaceAssociationDescriptor {
     uint8_t      bLength;           // Descriptor size in bytes (8)
@@ -156,8 +156,8 @@ struct PACKED USB_InterfaceAssociationDescriptor {
 
 /**
  * @brief Interface Descriptor
- * 
- * @note  
+ *
+ * @note
  */
 
 struct PACKED USB_InterfaceDescriptor {
@@ -174,7 +174,7 @@ struct PACKED USB_InterfaceDescriptor {
 
 /**
  * @brief Endpoint Descriptor
- * 
+ *
  */
 struct PACKED USB_EndpointDescriptor {
     uint8_t      bLength;           // Descriptor size in bytes (7)
@@ -188,38 +188,38 @@ struct PACKED USB_EndpointDescriptor {
 
 /**
  * @brief SuperSpeed Endpoint Companion
- * 
- * @note  bMaxBurst is maximum number of packets the endpoint can send or 
- *        receive as part of a burst - 1. 
- * 
+ *
+ * @note  bMaxBurst is maximum number of packets the endpoint can send or
+ *        receive as part of a burst - 1.
+ *
  * @note  bmAttributes is the maximum number of streams for bulk endpoints.
- *        For isochronous endpoints, it is the maximum number of packets in a 
- *        service interval.  
- * 
- * @note  wBytesPerInterval is the For periodic interrupt and isochronous 
- *        endpoints, the maximum number of bytes the endpoint expects to 
+ *        For isochronous endpoints, it is the maximum number of packets in a
+ *        service interval.
+ *
+ * @note  wBytesPerInterval is the For periodic interrupt and isochronous
+ *        endpoints, the maximum number of bytes the endpoint expects to
  *        transfer per service interval.
  */
 struct PACKED USB_EndPointCompanionSuperSpeedDescriptor {
     uint8_t       bLength;          // Descriptor size in bytes (6)
     uint8_t       bDescriptorType;  // SUPERSPEED_USB_ENDPOINT_COMPANION (30h)
     uint8_t       bMaxBurst;        // Maximum number of packets - 1.
-    uint8_t       bmAttributes;     // Maximum number of streams or packets 
+    uint8_t       bmAttributes;     // Maximum number of streams or packets
     uint16_t      wBytesPerInterval;// Maximum number of bytes the endpoint expects.
 };
 
 
 /**
  * @brief String Descriptor for Endpoint #0
- * 
+ *
  * @note  wLANGID[] contains one or more 16 bit languages ID.
- *        Commonly it is 0x0409 (US English). 
- * 
+ *        Commonly it is 0x0409 (US English).
+ *
  * @note  The  *flexible array member* feature of C99 is used in the
  *        last elements of the struct. This enables the definition during
  *        the initialization. At run time, a large amount of data can be
  *        allocated to store the struct data.
- * 
+ *
  * @note  bLength is sizeof(USB_StringDescriptor)+sizeof(wLANGID).
  *
  */
@@ -232,15 +232,15 @@ struct PACKED USB_StringDescriptorEP0 {
 
 /**
  * @brief String Descriptor for Endpoints greater than 0
- * 
+ *
  * @note  wLANGID[] contains one or more 16 bit languages ID.
- *        Commonly it is 0x0409 (US English). 
- * 
+ *        Commonly it is 0x0409 (US English).
+ *
  * @note  The  *flexible array member* feature of C99 is used in the
  *        last elements of the struct. This enables the definition during
  *        the initialization. At run time, a large amount of data can be
  *        allocated to store the struct data.
- * 
+ *
  * @note  bLength is sizeof(USB_StringDescriptor)+sizeof(wLANGID).
  *
  */
@@ -252,7 +252,7 @@ struct PACKED USB_StringDescriptorEPN {
 
 /**
  * @brief Device Capability Descriptor
- * 
+ *
  * @note  bData is a *flexible array member* feature of C99. This descriptor
  *        has size (3+sizeof(data))
  */
@@ -266,11 +266,11 @@ struct PACKED USB_DeviceCapabilityDescriptor {
 
 /**
  * @brief Device Object Store (BOS) Descriptor
- * 
+ *
  * @note  wTotalLength is the number of bytes in this descriptor and all of
  *        its subordinate descriptors
- * 
- * @note  bNumDeviceCaps is the number of device capability descriptors 
+ *
+ * @note  bNumDeviceCaps is the number of device capability descriptors
  *        subordinated to this BOS descriptor.
  */
 struct PACKED USB_DeviceObjectStoreDescriptor {
@@ -283,11 +283,11 @@ struct PACKED USB_DeviceObjectStoreDescriptor {
 
 /**
  * @brief Typedef for Descriptors
- * 
+ *
  * @note  TODO Maybe define a pointer type too.
  */
 
-typedef struct USB_GeneralDescriptor USB_GeneralDescriptor;;
+typedef struct USB_GeneralDescriptor USB_GeneralDescriptor;
 typedef struct USB_DeviceDescriptor USB_DeviceDescriptor;
 typedef struct USB_DeviceQualifierDescriptor USB_DeviceQualifierDescriptor;
 typedef struct USB_ConfigurationDescriptor USB_ConfigurationDescriptor;
@@ -298,7 +298,7 @@ typedef struct USB_EndpointDescriptor USB_EndpointDescriptor;
 typedef struct USB_EndPointCompanionSuperSpeedDescriptor USB_EndPointCompanionSuperSpeedDescriptor;
 typedef struct USB_StringDescriptorEP0 USB_StringDescriptorEP0;
 typedef struct USB_StringDescriptorEPN USB_StringDescriptorEPN;
-typedef struct USB_DeviceCapabilityDescriptor USB_DeviceCapabilityDescriptor; 
+typedef struct USB_DeviceCapabilityDescriptor USB_DeviceCapabilityDescriptor;
 typedef struct USB_DeviceObjectStoreDescriptor USB_DeviceObjectStoreDescriptor;
 
 
@@ -327,7 +327,7 @@ typedef struct USB_DeviceObjectStoreDescriptor USB_DeviceObjectStoreDescriptor;
  *   | 10h        |     X    | device capability                |
  *   | 11h        |     X    | wireless_endpoint_companion      |
  *   | 30h        |     6    | SuperSpeed_endpoint_companion    |
- * 
+ *
  * @note A simple name without the descriptor specifier is used
  *       because the fields are used in all descriptors
  */
@@ -380,11 +380,11 @@ typedef struct USB_DeviceObjectStoreDescriptor USB_DeviceObjectStoreDescriptor;
 
 /**
  * @brief USB version definitions
- * 
- * @note  They are 2 bytes long. 
- * 
+ *
+ * @note  They are 2 bytes long.
+ *
  * @note  It is used in many descriptors
- * 
+ *
  * @note  For Little Endian Systems. For Big Endian, the bytes
  *        must be reversed. E.g. 0x0210 -> 0x1002
  */
@@ -399,14 +399,14 @@ typedef struct USB_DeviceObjectStoreDescriptor USB_DeviceObjectStoreDescriptor;
 
 /**
  * @brief Definitions of symbols for Device Classes
- * 
- * @note  They are used in the device and interface descriptor. 
+ *
+ * @note  They are used in the device and interface descriptor.
  *        Some of them are specific to one of them.
  *
  * @note Device Class Code from https://www.usb.org/defined-class-codes
  *
  * @note  Table of Device Classes used in Device Descriptors
- * 
+ *
  * | bDeviceClass | Description                                                |
  * |--------------|------------------------------------------------------------|
  * | 00h          | The interface descriptor specifies the class and the       |
@@ -419,7 +419,7 @@ typedef struct USB_DeviceObjectStoreDescriptor USB_DeviceObjectStoreDescriptor;
  * |  ^           | level preferred)                                           |
  * | DCh          | Diagnostic device (can instead be declared at the interface|
  * |  ^           | level)                                                     |
- * | E0h          | Wireless Controller (can instead be declared at the        | 
+ * | E0h          | Wireless Controller (can instead be declared at the        |
  * |  ^           | interface level)                                           |
  * | EFh          | Miscellaneous
  * |    ^         | bDeviceSubclass = 01h
@@ -428,10 +428,10 @@ typedef struct USB_DeviceObjectStoreDescriptor USB_DeviceObjectStoreDescriptor;
  * |    ^         | bDeviceSubclass = 02h
  * |    ^         |   bDeviceProtocol = 01h: interface association descriptor
  * |    ^         |   bDeviceProtocol = 01h: wire adapter multifunction peripheral (Wireless USB).
- * | FFh          | Vendor-specific (can instead be declared at the interface level) 
+ * | FFh          | Vendor-specific (can instead be declared at the interface level)
  *
- * 
- *  
+ *
+ *
  * @note  Table of Device Classes used in Interface Descriptors
  *
  * |Device Class| Description
@@ -464,7 +464,7 @@ typedef struct USB_DeviceObjectStoreDescriptor USB_DeviceObjectStoreDescriptor;
  * |      ^     |    bInterfaceProtocol = 01h: active sync
  * |      ^     |    bInterfaceProtocol = 02h: Palm sync
  * |      ^     | bInterfaceSubclass = 03h. Cable based association framework (Wireless USB)
- * 
+ *
  *
  */
 
@@ -478,7 +478,7 @@ typedef struct USB_DeviceObjectStoreDescriptor USB_DeviceObjectStoreDescriptor;
 #define USB_DEVDESC_DEVCLASS_DIAGNOSTIC                     0xDC
 #define USB_DEVDESC_DEVCLASS_MISCELLANEOUS                  0xEF
 #define USB_DEVDESC_DEVCLASS_VENDOR                         0xFF
-///@} 
+///@}
 
 ///@{
 /** Interface Descriptors */
@@ -501,11 +501,11 @@ typedef struct USB_DeviceObjectStoreDescriptor USB_DeviceObjectStoreDescriptor;
 #define USB_INTDESC_DEVCLASS_MISCELLANEOUS                  0xEF
 #define USB_INTDESC_DEVCLASS_APPLICATION                    0xFE
 #define USB_INTDESC_DEVCLASS_VENDOR                         0xFF
-///@} 
+///@}
 
 /**
  * @brief Device Subclasses for Device Descriptors
- * 
+ *
  * @note  Generally defined in Class Specific Docs
  */
 #define USB_DEVDESC_SUBCLASS_DEFERRED                       0x00
@@ -523,7 +523,7 @@ typedef struct USB_DeviceObjectStoreDescriptor USB_DeviceObjectStoreDescriptor;
 
 /**
  * @brief Protocol for Device Descriptors
- * 
+ *
  * @note  Generally defined in Class Specific Docs
  */
 ///@{
@@ -570,7 +570,7 @@ typedef struct USB_DeviceObjectStoreDescriptor USB_DeviceObjectStoreDescriptor;
 #define USB_INTDESC_SUBCLASS_APPLICATION_DFU                0x01
 #define USB_INTDESC_SUBCLASS_APPLICATION_IRDABRIDGE         0x02
 #define USB_INTDESC_SUBCLASS_APPLICATION_TEST               0x03
-///@} 
+///@}
 
 /**
  * @brief Protocol for Interface Descriptors
@@ -620,7 +620,7 @@ typedef struct USB_DeviceObjectStoreDescriptor USB_DeviceObjectStoreDescriptor;
 #define USB_INTDESC_PROTOCOL_APPLICATION_IRDABRIDGE         0x00
 #define USB_INTDESC_PROTOCOL_APPLICATION_TEST               0x00
 #define USB_INTDESC_PROTOCOL_APPLICATION_TEST_USB488        0x01
-///@} 
+///@}
 
 /**
  * @brief Definitions of attributes in Configuration Descriptor
@@ -664,9 +664,9 @@ typedef struct USB_DeviceObjectStoreDescriptor USB_DeviceObjectStoreDescriptor;
 
 /**
  * @brief Definitions of symbols for device capability types
- * 
+ *
  * @note  where does this come from?
- * 
+ *
  * @note  See symbols for bDevCapabilityType below
  *               01h = Wireless USB
  *               02h = USB 2.0 EXTENSION
@@ -692,15 +692,15 @@ typedef struct USB_DeviceObjectStoreDescriptor USB_DeviceObjectStoreDescriptor;
 
 /**
  * @brief Macros to generate a string descriptor
- * 
+ *
  * @param NAME name of the descriptor
  * @param SIZE size of the string
  * @param ...  string as an array of characters 'A', 'B' ...
- * 
+ *
  * @note  It defines an uint16_t array and points to it.
- * 
+ *
  * @note  It uses C99 macros with variadic parameters
- * 
+ *
   */
 ///@{
 #define DECLARESTRINGDESC(NAME,SIZE,STRING,...) \

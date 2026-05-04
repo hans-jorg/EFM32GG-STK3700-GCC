@@ -248,15 +248,18 @@ ClockConfiguration_t clockconf;
 
     perclk = clockconf.perfreq;
     div    = clockconf.hclkdiv;
+    (void) div;
 
     t2 = 1000*perclk/speed;
 
     tl = (t2+1)/2;              // Must be adjusted for non symmetrical clock signal
     th = t2-tl;
+    (void)  th;
 
     // TODO: Calculate N_high and N_low
     nh = 0;
     nl = 0;
+    (void) nl;
 
     i2c->CLKDIV = (nh<<_I2C_CLKDIV_DIV_SHIFT)&_I2C_CLKDIV_DIV_MASK;
 

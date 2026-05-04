@@ -15,31 +15,60 @@
  *
  */
 
+#include <stdint.h>
 
 /**
  *  @brief  NAND features
  */
-#define NAND_CAPACITY                           (32*1024L*1024L)
-#define NAND_PAGESIZE                           (512L)
-#define NAND_SPARESIZE                          (16L)
-#define NAND_BLOCKSIZE                          (32*NAND_PAGESIZE)
-#define NAND_PAGECOUNT                          (NAND_CAPACITY/NAND_PAGESIZE)
-#define NAND_PAGEADDRMASK                       ((NAND_PAGECOUNT-1)<<9)
+#define NAND_CAPACITY                        (32*1024L*1024L)
+#define NAND_PAGESIZE                        (512L)
+#define NAND_HALFPAGESIZE                    (256L)
+#define NAND_SPARESIZE                       (16L)
+#define NAND_FULLPAGESIZE                    (NAND_PAGESIZE+16L)
+#define NAND_PAGESPERBLOCK                   (32)
+#define NAND_BLOCKSIZE                       (NAND_PAGESPERBLOCK*NAND_PAGESIZE
+#define NAND_PAGECOUNT                       (NAND_CAPACITY/NAND_PAGESIZE)
+#define NAND_BLOCKCOUNT                      (NAND_PAGECOUNT/NAND_PAGESPERBLOCK)
+#define NAND_PAGEADDRMASK                    ((NAND_PAGECOUNT-1)<<9)
+#define NAND_BLOCKADDRMASK                   ((NAND_PAGECOUNT-1)<<14)
+#define NAND_MAXADDRESS                      (32*1024*1024-1)
 
 #define NAND_TIMEOUT                            (1000)
 
-int NAND_Init(void);
-uint32_t NAND_Status(void);
-int NAND_Ready(void);
 
-int NAND_WriteFullPage(uint32_t pageaddr, uint8_t *data);
-int NAND_ReadFullPage(uint32_t pageaddr, uint8_t *data);
-int NAND_WritePage(uint32_t pageaddr, uint8_t *data);
-int NAND_ReadPage(uint32_t pageaddr, uint8_t *data);
-int NAND_WriteSpare(uint32_t pageaddr, uint8_t *data);
-int NAND_ReadSpare(uint32_t pageaddr, uint8_t *data);
-int NAND_EnableWriteProtect(void);
-int NAND_DisableWriteProtect(void);
+/**
+ * @brief  Status bits of Status Data
+ */
+///@{
+#define NAND_STATUS_WRITEPROTECTED           (0x80)
+#define NAND_STATUS_READY                    (0x40)
+#define NAND_STATUS_ERROR                    (0x01)
+#define NAND_STATUS_ALL  ( \
+                     NAND_STATUS_WRITEPROTECTED \
+                    |NAND_STATUS_READY          \
+                    |NAND_STATUS_ERROR   )
+///@}
+
+int32_t  NAND_Init(void);
+uint32_t NAND_Status(void);
+
+int32_t  NAND_Ready(void);
+int32_t  NAND_Busy(void);
+int32_t  NAND_WaitUntilReadyStatus(void);
+int32_t  NAND_WaitUntilReadyPin(void);
+int32_t  NAND_CheckReadyPin(void);
+int32_t  NAND_CheckReadyStatus(void);
+
+int32_t  NAND_WriteFullPage(uint32_t pageaddr, uint8_t *data, uint16_t n);
+int32_t  NAND_ReadFullPage(uint32_t pageaddr, uint8_t *data, uint16_t n);
+int32_t  NAND_WritePage(uint32_t pageaddr, uint8_t *data, uint16_t n);
+int32_t  NAND_ReadPage(uint32_t pageaddr, uint8_t *data, uint16_t n);
+int32_t  NAND_WriteSpare(uint32_t pageaddr, uint8_t *data, uint16_t n);
+int32_t  NAND_ReadSpare(uint32_t pageaddr, uint8_t *data, uint16_t n);
+int32_t  NAND_ReadSignature(uint8_t *data, uint16_t n);
+
+void     NAND_EnableWriteProtect(void);
+void     NAND_DisableWriteProtect(void);
 
 
 #endif // NAND_FLASH_H

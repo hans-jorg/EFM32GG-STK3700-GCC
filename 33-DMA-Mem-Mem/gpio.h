@@ -26,12 +26,13 @@ typedef GPIO_P_TypeDef *GPIO_t;
  * @brief   Pointers for GPIO ports
  */
 //@{
-static const GPIO_t GPIOA = &(GPIO->P[0]);  // GPIOA
-static const GPIO_t GPIOB = &(GPIO->P[1]);  // GPIOB
-static const GPIO_t GPIOC = &(GPIO->P[2]);  // GPIOC
-static const GPIO_t GPIOD = &(GPIO->P[3]);  // GPIOD
-static const GPIO_t GPIOE = &(GPIO->P[4]);  // GPIOE
-static const GPIO_t GPIOF = &(GPIO->P[5]);  // GPIOF
+#define UNUSED __attribute__((unused))
+static const UNUSED GPIO_t GPIOA = &(GPIO->P[0]);  // GPIOA
+static const UNUSED GPIO_t GPIOB = &(GPIO->P[1]);  // GPIOB
+static const UNUSED GPIO_t GPIOC = &(GPIO->P[2]);  // GPIOC
+static const UNUSED GPIO_t GPIOD = &(GPIO->P[3]);  // GPIOD
+static const UNUSED GPIO_t GPIOE = &(GPIO->P[4]);  // GPIOE
+static const UNUSED GPIO_t GPIOF = &(GPIO->P[5]);  // GPIOF
 //@}
 
 

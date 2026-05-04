@@ -61,6 +61,35 @@ void GPIO_ConfigPins(GPIO_t gpio, uint32_t pins, uint32_t mode);
 void GPIO_Init(GPIO_t gpio, uint32_t inputs, uint32_t outputs);
 
 /**
+ * @brief   Set specified pins HIGH
+ * @param   gpio:   pointer to GPIO registers
+ * @param   pinmask:bit mask specifing pins to be set
+ */
+
+inline static void
+GPIO_SetPins(GPIO_t gpio, uint32_t pinmask) {
+#ifdef GPIO_ALTERNATE_OPERATIONS
+    gpio->DOUTSET = pinmask;
+#else
+    gpio->DOUT |= pinmask;
+#endif
+} 
+
+/**
+ * @brief   Set specified pins to LOW
+ * @param   gpio:   pointer to GPIO registers
+ * @param   pinmask: bit mask specifing pins to be cleared
+ */
+
+inline static void
+GPIO_ClearPins(GPIO_t gpio, uint32_t pinmask) {
+#ifdef GPIO_ALTERNATE_OPERATIONS
+    gpio->DOUTCLR = pinmask;
+#else
+    gpio->DOUT &= ~pinmask;
+#endif
+}
+/**
  * @brief   Set specified pins to zero, then others (or same) to 1
  * @param   gpio:   pointer to GPIO registers
  * @param   zeroes: bit mask specifing pins to be cleared

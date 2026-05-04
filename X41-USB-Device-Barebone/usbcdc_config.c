@@ -109,7 +109,7 @@ const USB_EndpointDescriptor EndpointDescriptorDataIN = {
      .wMaxPacketSize      =  USB_FULLSPEED_BULK_MAXPACKET,
      .bInterval           =  0
 };
-                          
+
 const USB_EndpointDescriptor EndpointDescriptorDataOUT = {
      .bLength             =  USB_DESCSIZE_ENDPOINT,
      .bDescriptorType     =  USB_DESCTYPE_ENDPOINT,
@@ -123,7 +123,7 @@ const USBCDC_HeaderDescriptor HeaderDescriptor = {
      .bFunctionLength     =  USBCDC_DESCSIZE_HEADER,
      .bDescriptorType     =  USBCDC_INTERFACE,
      .bDescriptorSubType  =  USBCDC_DESCSUBTYPE_HEADER,
-     .bcdDCD              =  USBCDC_VERSION_12 
+     .bcdDCD              =  USBCDC_VERSION_12
 };
 
 
@@ -165,13 +165,13 @@ USB_GeneralDescriptor *Configuration[] = {
 
 /* String Descriptors */
 DECLARELANGUAGEDESC(LanguageString, 1, 0x409 );
-DECLARESTRINGDESC(ManufacturerString,11, 
+DECLARESTRINGDESC(ManufacturerString,11,
                 'E','x','a','m','p','l','e','.','c','o','m' );
 DECLARESTRINGDESC(ProductString, 13,
                 'E','F','M','3','2','-','S','T','K','3','7','0','0' );
 
 
-const struct USB_StringDescriptorEPN const *Strings[] = {
+const struct USB_StringDescriptorEPN *Strings[] = {
    (const struct USB_StringDescriptorEPN *const) LanguageString,
    ManufacturerString,
    ProductString,
