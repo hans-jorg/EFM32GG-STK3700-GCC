@@ -19,7 +19,7 @@ void LED_Init(uint32_t leds) {
     GPIO_Init(GPIOE,0,leds);
 
     // Turn Off LEDs
-    GPIO_WritePins(GPIOE,leds,0);
+    GPIO_ClearPins(GPIOE,leds);
 
 }
 
@@ -30,7 +30,7 @@ void LED_Init(uint32_t leds) {
  */
 void LED_On(uint32_t leds) {
 
-    GPIO_WritePins(GPIOE,0,leds);
+    GPIO_SetPins(GPIOE,leds);
 }
 
 /**
@@ -40,7 +40,7 @@ void LED_On(uint32_t leds) {
  */
 void LED_Off(uint32_t leds) {
 
-    GPIO_WritePins(GPIOE,leds,0);
+    GPIO_ClearPins(GPIOE,leds);
 }
 
 /**
@@ -55,5 +55,5 @@ void LED_Toggle(uint32_t leds) {
 
 void LED_Write(uint32_t off, uint32_t on) {
 
-    GPIO_WritePins(GPIOE,off,on);
+    GPIO_ClearAndSetPins(GPIOE,off,on);
 }

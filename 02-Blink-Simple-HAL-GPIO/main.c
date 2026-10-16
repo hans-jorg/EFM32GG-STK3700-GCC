@@ -164,7 +164,7 @@ GPIO_Init(GPIO_t gpio, uint32_t inputs, uint32_t outputs) {
  */
 
 void
-GPIO_Clear(GPIO_t gpio, uint32_t zeroes) {
+GPIO_ClearPins(GPIO_t gpio, uint32_t zeroes) {
 #ifdef GPIO_ALTERNATE_OPERATIONS
     gpio->DOUTCLR = zeroes;
 #else
@@ -183,7 +183,7 @@ GPIO_Clear(GPIO_t gpio, uint32_t zeroes) {
  */
 
 void
-GPIO_Set(GPIO_t gpio, uint32_t ones) {
+GPIO_SetPins(GPIO_t gpio, uint32_t ones) {
 #ifdef GPIO_ALTERNATE_OPERATIONS
     gpio->DOUTSET = ones;
 #else
@@ -202,7 +202,7 @@ GPIO_Set(GPIO_t gpio, uint32_t ones) {
  */
 
 void
-GPIO_ClearAndSet(GPIO_t gpio, uint32_t zeroes, uint32_t ones) {
+GPIO_ClearAndSetPins(GPIO_t gpio, uint32_t zeroes, uint32_t ones) {
 #ifdef GPIO_ALTERNATE_OPERATIONS
     gpio->DOUTCLR = zeroes;
     gpio->DOUTSET = ones;
@@ -222,7 +222,7 @@ GPIO_ClearAndSet(GPIO_t gpio, uint32_t zeroes, uint32_t ones) {
  */
 
 void
-GPIO_SetAndClear(GPIO_t gpio, uint32_t zeroes, uint32_t ones) {
+GPIO_SetAndClearPins(GPIO_t gpio, uint32_t zeroes, uint32_t ones) {
 #ifdef GPIO_ALTERNATE_OPERATIONS
     gpio->DOUTSET = ones;
     gpio->DOUTCLR = zeroes;
@@ -282,7 +282,7 @@ int main(void) {
     /* Configure Pins in GPIOE */
     GPIO_Init(GPIOE,0,LED1|LED2);       // LED pins configured as output
 
-    GPIO_ClearAndSet(GPIOE,LED1|LED2,0);  // Turn Off LEDs
+    GPIO_ClearAndSetPins(GPIOE,LED1|LED2,0);  // Turn Off LEDs
 
     /* Blink loop */
     while (1) {
@@ -294,7 +294,7 @@ int main(void) {
         GPIO_TogglePins(GPIOE,LED2);            // Toggle LED2
 
         Delay(DELAYVAL);
-        GPIO_ClearAndSet(GPIOE,0,LED1|LED2);      // Turn On All LEDs
+        GPIO_ClearAndSetPins(GPIOE,0,LED1|LED2);      // Turn On All LEDs
 
     }
 }

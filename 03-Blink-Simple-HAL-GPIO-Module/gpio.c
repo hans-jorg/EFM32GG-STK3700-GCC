@@ -61,3 +61,118 @@ GPIO_Init(GPIO_t gpio, uint32_t inputs, uint32_t outputs) {
     GPIO_ConfigPins(gpio,inputs,GPIO_MODE_INPUT);       // Safer when both specified
 
 }
+
+
+/**
+ * @brief   Set specified pins to zero
+ * @param   gpio:   pointer to GPIO registers
+ * @param   zeroes: bit mask specifing pins to be cleared
+ * @param   ones:   bit mask specifing pins to be set
+ *
+ * @note    when a pin is specified in both (zeroes and ones) it is
+ *          cleared and then set
+ */
+
+void
+GPIO_ClearPins(GPIO_t gpio, uint32_t zeroes) {
+#ifdef GPIO_ALTERNATE_OPERATIONS
+    gpio->DOUTCLR = zeroes;
+#else
+    gpio->DOUT = (gpio->DOUT&~zeroes);
+#endif
+}
+
+/**
+ * @brief   Set specified pins to one
+ * @param   gpio:   pointer to GPIO registers
+ * @param   zeroes: bit mask specifing pins to be cleared
+ * @param   ones:   bit mask specifing pins to be set
+ *
+ * @note    when a pin is specified in both (zeroes and ones) it is
+ *          cleared and then set
+ */
+
+void
+GPIO_SetPins(GPIO_t gpio, uint32_t ones) {
+#ifdef GPIO_ALTERNATE_OPERATIONS
+    gpio->DOUTSET = ones;
+#else
+    gpio->DOUT = (gpio->DOUT|ones);
+#endif
+}
+
+/**
+ * @brief   Set specified pins to zero, then others (or same) to 1
+ * @param   gpio:   pointer to GPIO registers
+ * @param   zeroes: bit mask specifing pins to be cleared
+ * @param   ones:   bit mask specifing pins to be set
+ *
+ * @note    when a pin is specified in both (zeroes and ones) it is
+ *          cleared and then set
+ */
+
+void
+GPIO_ClearAndSetPins(GPIO_t gpio, uint32_t zeroes, uint32_t ones) {
+#ifdef GPIO_ALTERNATE_OPERATIONS
+    gpio->DOUTCLR = zeroes;
+    gpio->DOUTSET = ones;
+#else
+    gpio->DOUT = (gpio->DOUT&~zeroes)|ones;
+#endif
+}
+
+/**
+ * @brief   Set specified pins to zero, then others (or same) to 1
+ * @param   gpio:   pointer to GPIO registers
+ * @param   zeroes: bit mask specifing pins to be cleared
+ * @param   ones:   bit mask specifing pins to be set
+ *
+ * @note    when a pin is specified in both (zeroes and ones) it is
+ *          cleared and then set
+ */
+
+void
+GPIO_SetAndClearPins(GPIO_t gpio, uint32_t zeroes, uint32_t ones) {
+#ifdef GPIO_ALTERNATE_OPERATIONS
+    gpio->DOUTSET = ones;
+    gpio->DOUTCLR = zeroes;
+#else
+    gpio->DOUT = (gpio->DOUT|ones)&~zeroes;
+#endif
+}
+
+/**
+ * @brief  Toggle specified pins
+ * @param  gpio: GPIO port
+ * @param  pins: bit mask specifing pins to be toggled
+ */
+
+void
+GPIO_TogglePins(GPIO_t gpio, uint32_t pins) {
+#ifdef GPIO_ALTERNATE_OPERATIONS
+    gpio->DOUTTGL = pins;
+#else
+    gpio->DOUT ^= pins;
+#endif
+}
+
+/**
+ * @brief  Return pin status
+ * @param  gpio: GPIO port
+ */
+uint32_t
+GPIO_ReadPins(GPIO_t gpio) {
+    return gpio->DIN;
+}
+
+/**
+ * @brief  Write pins of specified GPIO port
+ * @param  gpio: GPIO port
+ * @param  pins: bit mask specifing new values for pins
+ *
+ * @note:  Beware. It affects all pins of the GPIO
+ */
+void
+GPIO_WritePins(GPIO_t gpio, uint32_t pins) {
+    gpio->DOUT = pins;
+}

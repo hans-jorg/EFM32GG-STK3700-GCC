@@ -61,7 +61,7 @@ int main(void) {
     /* Configure Pins in GPIOE */
     GPIO_Init(GPIOE,0,LED1|LED2);       // LED pins configured as output
 
-    GPIO_WritePins(GPIOE,LED1|LED2,0);  // Turn Off LEDs
+    GPIO_SetPins(GPIOE,LED1|LED2);  // Turn Off LEDs
 
     /* Blink loop */
     while (1) {
@@ -73,7 +73,9 @@ int main(void) {
         GPIO_TogglePins(GPIOE,LED2);            // Toggle LED2
 
         Delay(DELAYVAL);
-        GPIO_WritePins(GPIOE,0,LED1|LED2);      // Turn On All LEDs
+        GPIO_SetPins(GPIOE,LED1|LED2);          // Turn On All LEDs
 
+        Delay(DELAYVAL);
+        GPIO_ClearPins(GPIOE,LED1|LED2);        // Turn Off All LEDs
     }
 }

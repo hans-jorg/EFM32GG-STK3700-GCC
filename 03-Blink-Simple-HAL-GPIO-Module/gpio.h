@@ -56,48 +56,15 @@ static const uint32_t GPIO_MODE_WIREDANDDRIVEFILTER               =   0xD;
 static const uint32_t GPIO_MODE_WIREDANDDRIVEPULLUP               =   0xE;
 static const uint32_t GPIO_MODE_WIREDANDDRIVEPULLUPFILTER         =   0xF;
 //@}
-
 void GPIO_ConfigPins(GPIO_t gpio, uint32_t pins, uint32_t mode);
 void GPIO_Init(GPIO_t gpio, uint32_t inputs, uint32_t outputs);
 
-/**
- * @brief   Set specified pins to zero, then others (or same) to 1
- * @param   gpio:   pointer to GPIO registers
- * @param   zeroes: bit mask specifing pins to be cleared
- * @param   ones:   bit mask specifing pins to be set
- *
- * @note    when a pin is specified in both (zeroes and ones) it is
- *          cleared and then set
- */
-
-inline static void
-GPIO_WritePins(GPIO_t gpio, uint32_t zeroes, uint32_t ones) {
-#ifdef GPIO_ALTERNATE_OPERATIONS
-    gpio->DOUTCLR = zeroes;
-    gpio->DOUTSET = ones;
-#else
-    gpio->DOUT = (gpio->DOUT&~zeroes)|ones;
-#endif
-}
-
-
-/**
- * @brief  Toggle specified pins
- * @param  delay: bit mask specifing pins to be toggled
- */
-
-inline static void
-GPIO_TogglePins(GPIO_t gpio, uint32_t pins) {
-#ifdef GPIO_ALTERNATE_OPERATIONS
-    gpio->DOUTTGL = pins;
-#else
-    gpio->DOUT ^= pins;
-#endif
-}
-
-inline static uint32_t
-GPIO_ReadPins(GPIO_t gpio) {
-    return gpio->DIN;
-}
+void GPIO_ClearPins(GPIO_t gpio, uint32_t zeroes);
+void GPIO_SetPins(GPIO_t gpio, uint32_t ones);
+void GPIO_ClearAndSetPins(GPIO_t gpio, uint32_t zeroes, uint32_t ones);
+void GPIO_SetAndClearPins(GPIO_t gpio, uint32_t zeroes, uint32_t ones);
+void GPIO_TogglePins(GPIO_t gpio, uint32_t pins);
+uint32_t GPIO_ReadPins(GPIO_t gpio);
+void GPIO_WritePins(GPIO_t gpio, uint32_t pins);
 
 #endif // GPIO_H
