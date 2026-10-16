@@ -126,9 +126,9 @@ CMSISDEVINCDIR=${GECKOSDKDIR}/platform/Device/SiliconLabs/EFM32GG/Include
 #
 
 #When using only the FreeRTOS Kernel
-FREERTOSDIR=../../../FreeRTOS-Kernel
+#FREERTOSDIR=../../../FreeRTOS-Kernel
 # When using the full FreeRTOS (not tested)
-#FREERTOSDIR=../../../FreeRTOS/FreeRTOS/Source
+FREERTOSDIR=../../../FreeRTOS/FreeRTOS/Source
 
 # Virtual path
 VPATH=      $(FREERTOSDIR):\

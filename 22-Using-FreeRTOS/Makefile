@@ -124,9 +124,9 @@ CMSISDEVINCDIR=${GECKOSDKDIR}/platform/Device/SiliconLabs/EFM32GG/Include
 #
 
 #When using only the FreeRTOS Kernel
-FREERTOSDIR=../../../FreeRTOS-Kernel
+#FREERTOSDIR=../../../FreeRTOS-Kernel
 # When using the full FreeRTOS (not tested)
-#FREERTOSDIR=../../../FreeRTOS/FreeRTOS/Source
+FREERTOSDIR=../../../FreeRTOS/FreeRTOS/Source
 
 # Virtual path
 VPATH=      $(FREERTOSDIR):\
@@ -808,7 +808,7 @@ endif
 # Ozone does not use GDBPROXY!!!
 ozone: ${OBJDIR}/${PROGNAME}.bin
 	echo "Ozone does not use GDB Proxy"
-	${OZONE} ozone  -usb -if swd -device ${PART} -programfile ${OBJDIR}/${PROGNAME}.axf 
+	${OZONE} ozone  -usb -if swd -device ${PART} -programfile ${OBJDIR}/${PROGNAME}.axf
 
 #
 # Start GDB proxy
