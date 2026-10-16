@@ -1,5 +1,5 @@
 ##
-#  @file     Makefile for emlib
+#  @file     Makefile
 #  @brief    General makefile for EMF32GG
 #  @version  v1.5
 #  @date     10/11/2023
@@ -22,8 +22,7 @@
 #  @param   nemiver    creates debug session with nemiver
 #  @param size         show code size
 #  @param nm           list symbols
-#  @param dis          disassemble output file into ${OBJDIR}/${PROGNAME}.S
-#  @param dump         generate a hexadecimal dump file into ${OBJDIR}/${PROGNAME}.dump
+#  @param dump         show object code in assembly format
 #  @param term         open a terminal for serial communication to board
 #  @param openocd      start an openOCD proxy
 #  @param gdbproxy     start a GDB proxy
@@ -46,7 +45,7 @@
 #
 # Program name
 #
-PROGNAME=nand
+PROGNAME=flash-littlefs
 
 #
 # Verbose output for Make (Coment to have verbose output}
@@ -107,23 +106,13 @@ CMSISDIR=${GECKOSDKDIR}/platform/CMSIS/Core
 CMSISDEVINCDIR=${GECKOSDKDIR}/platform/Device/SiliconLabs/EFM32GG/Include
 
 #
-# Common sl(?)
+# LittleFS middleware
 #
-COMMONDIR=${GECKOSDKDIR}/platform/common
-COMMONINCDIR=${COMMONDIR}/inc
+LFSDIR=../../../littlefs
+LFSSRCS=lfs.c
+LFSSRCFILES=$(addprefix $(LFSDIR)/,$(LFSSRCS))
 
-#
-# EMLIB include and source files
-#
-EMLIBDIR=${GECKOSDKDIR}/platform/emlib
-EMLIBINCDIR=${EMLIBDIR}/inc
-EMLIBSRCDIR=${EMLIBDIR}/src
-
-EMLIBSRCS= em_system.c em_dma.c em_cmu.c em_gpio.c em_ebi.c em_usart.c
-
-EMLIBSRCFILES=$(addprefix $(EMLIBSRCDIR)/,$(EMLIBSRCS))
-VPATH=  ${EMLIBSRCDIR}
-
+VPATH=      ${LFSDIR}
 #
 # Commands Linux/Windows
 #
@@ -168,14 +157,13 @@ default: build
 #   See readme.txt in the the share/doc/gcc-arm-none-eabi/ subfolder
 #   of the GNU ARM installation folder
 #
-#   The EFM32GG990F1024 is a Cortex M3 processor with  a1024 MByte Flash memory
-#   and a 128KByte RAM.
+#   The EFM32GG990F1024 is a Cortex M3 processor with  a1024 MByte Flash memory and
+#   a 128KByte RAM.
 #   It has no FPU!. So it will use a software emulation of the FPU (default)
 #
 #   The default printf and scanf functions do not support floating point data.
 #   In order to use printf and scanf that support floating point,
-#   the *-u _printf_float* and *-u scanf_float* parameters must be set during
-#   compilation
+#   the *-u _printf_float* and *-u scanf_float* parameters must be set during compilation
 #
 CPUFLAGS= -mcpu=cortex-m3 -mthumb
 FPUFLAGS= -mfloat-abi=soft
@@ -213,10 +201,9 @@ OBJDIR=gcc
 #
 # Object files
 #
-OBJFILES=${addprefix ${OBJDIR}/,   \
-                        ${notdir ${SRCFILES:.c=.o}} \
-                        ${notdir ${EMLIBSRCFILES:.c=.o}} \
-                        ${notdir ${EMDRVSRCFILES:.c=.o}} }
+OBJFILES=${addprefix ${OBJDIR}/,${notdir ${SRCFILES:.c=.o}  \
+                                         ${LFSSRCFILES:.c=.o} } }
+
 
 
 #
@@ -248,7 +235,8 @@ CERRORFLAGS=                                        \
 # Include path
 #
 CMSISINCDIR= ${CMSISDIR}/Include
-INCLUDEPATH= ${CMSISDEVINCDIR} ${CMSISINCDIR} ${EMLIBINCDIR} ${COMMONINCDIR}
+LFSINCDIR=${LFSDIR}
+INCLUDEPATH= ${LFSINCDIR} ${CMSISDEVINCDIR} ${CMSISINCDIR}
 
 
 ###############################################################################
@@ -459,6 +447,30 @@ STACKUSAGE=stack-usage
 CFLAGS += -fstack-usage -fdump-ipa-cgraph
 
 #
+# Generation of stack usage report
+#
+# There are some options for the generation of the stack usage report
+#
+# 1. puncover:          https://github.com/HBehrens/puncover/
+# 2. stack-usage:       https://github.com/sharkfox/stack-usage
+# Alternatives not implemented
+# 3. worst-case-stack:  https://github.com/PeterMcKinnis/WorstCaseStack
+# 4. check-stack-usage: https://github.com/ttsiodras/checkStackUsage
+#
+# OBS:
+#    stack-usage demands compilation with certain flags for the generation of
+#    auxiliary files
+#
+#
+stack-report=stack-usage
+#stack-report=puncover
+
+
+# Only for stack-usage
+CFLAGS += -fstack-usage -fdump-ipa-cgraph
+
+
+#
 # Options for flash and debug
 #
 
@@ -644,9 +656,6 @@ usage:
 	@echo "make openocd      start an openOCD proxy"
 	@echo "make gdbproxy     start a GDB proxy"
 	@echo "make docs         generates docs using doxygen"
-	@echo "make stack-report generates a stack usage report"
-	@echo "make cflow        generates flow (call) map"
-	@echo "make touch        forces compilation of all modules by next build"
 	@echo "make stack-report generates a stack usage report"
 	@echo "make cflow        generates flow (call) map"
 	@echo "make touch        forces compilation of all modules by next build"
@@ -870,7 +879,6 @@ clean:
 
 #
 # Copy the SVD to OBJDIR folder
-#
 #
 ifeq (${INSIDEVSCODE},yes)
 svd: ${OBJDIR} ${OBJDIR}/${PART}.svd
