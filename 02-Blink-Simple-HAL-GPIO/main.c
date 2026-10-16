@@ -60,7 +60,7 @@ int i;
 #define GPIO_ALTERNATE_OPERATIONS
 
 // To avoid messages for unused const variables!!!
-#define CONST static const __attribute__((unused)) 
+#define CONST static const __attribute__((unused))
 /**
  * @brief   Pointer to GPIO registers
  */
@@ -154,6 +154,44 @@ GPIO_Init(GPIO_t gpio, uint32_t inputs, uint32_t outputs) {
 }
 
 /**
+ * @brief   Set specified pins to zero
+ * @param   gpio:   pointer to GPIO registers
+ * @param   zeroes: bit mask specifing pins to be cleared
+ * @param   ones:   bit mask specifing pins to be set
+ *
+ * @note    when a pin is specified in both (zeroes and ones) it is
+ *          cleared and then set
+ */
+
+void
+GPIO_Clear(GPIO_t gpio, uint32_t zeroes) {
+#ifdef GPIO_ALTERNATE_OPERATIONS
+    gpio->DOUTCLR = zeroes;
+#else
+    gpio->DOUT = (gpio->DOUT&~zeroes);
+#endif
+}
+
+/**
+ * @brief   Set specified pins to one
+ * @param   gpio:   pointer to GPIO registers
+ * @param   zeroes: bit mask specifing pins to be cleared
+ * @param   ones:   bit mask specifing pins to be set
+ *
+ * @note    when a pin is specified in both (zeroes and ones) it is
+ *          cleared and then set
+ */
+
+void
+GPIO_Set(GPIO_t gpio, uint32_t ones) {
+#ifdef GPIO_ALTERNATE_OPERATIONS
+    gpio->DOUTSET = ones;
+#else
+    gpio->DOUT = (gpio->DOUT|ones);
+#endif
+}
+
+/**
  * @brief   Set specified pins to zero, then others (or same) to 1
  * @param   gpio:   pointer to GPIO registers
  * @param   zeroes: bit mask specifing pins to be cleared
@@ -163,8 +201,8 @@ GPIO_Init(GPIO_t gpio, uint32_t inputs, uint32_t outputs) {
  *          cleared and then set
  */
 
-inline static void
-GPIO_WritePins(GPIO_t gpio, uint32_t zeroes, uint32_t ones) {
+void
+GPIO_ClearAndSet(GPIO_t gpio, uint32_t zeroes, uint32_t ones) {
 #ifdef GPIO_ALTERNATE_OPERATIONS
     gpio->DOUTCLR = zeroes;
     gpio->DOUTSET = ones;
@@ -173,13 +211,33 @@ GPIO_WritePins(GPIO_t gpio, uint32_t zeroes, uint32_t ones) {
 #endif
 }
 
+/**
+ * @brief   Set specified pins to zero, then others (or same) to 1
+ * @param   gpio:   pointer to GPIO registers
+ * @param   zeroes: bit mask specifing pins to be cleared
+ * @param   ones:   bit mask specifing pins to be set
+ *
+ * @note    when a pin is specified in both (zeroes and ones) it is
+ *          cleared and then set
+ */
+
+void
+GPIO_SetAndClear(GPIO_t gpio, uint32_t zeroes, uint32_t ones) {
+#ifdef GPIO_ALTERNATE_OPERATIONS
+    gpio->DOUTSET = ones;
+    gpio->DOUTCLR = zeroes;
+#else
+    gpio->DOUT = (gpio->DOUT|ones)&~zeroes;
+#endif
+}
 
 /**
  * @brief  Toggle specified pins
- * @param  delay: bit mask specifing pins to be toggled
+ * @param  gpio: GPIO port
+ * @param  pins: bit mask specifing pins to be toggled
  */
 
-inline static void
+void
 GPIO_TogglePins(GPIO_t gpio, uint32_t pins) {
 #ifdef GPIO_ALTERNATE_OPERATIONS
     gpio->DOUTTGL = pins;
@@ -188,11 +246,26 @@ GPIO_TogglePins(GPIO_t gpio, uint32_t pins) {
 #endif
 }
 
-inline static uint32_t
+/**
+ * @brief  Return pin status
+ * @param  gpio: GPIO port
+ */
+uint32_t
 GPIO_ReadPins(GPIO_t gpio) {
     return gpio->DIN;
 }
 
+/**
+ * @brief  Write pins of specified GPIO port
+ * @param  gpio: GPIO port
+ * @param  pins: bit mask specifing new values for pins
+ *
+ * @note:  Beware. It affects all pins of the GPIO
+ */
+void
+GPIO_WritePins(GPIO_t gpio, uint32_t pins) {
+    gpio->DOUT = pins;
+}
 
 
 /**
@@ -209,7 +282,7 @@ int main(void) {
     /* Configure Pins in GPIOE */
     GPIO_Init(GPIOE,0,LED1|LED2);       // LED pins configured as output
 
-    GPIO_WritePins(GPIOE,LED1|LED2,0);  // Turn Off LEDs
+    GPIO_ClearAndSet(GPIOE,LED1|LED2,0);  // Turn Off LEDs
 
     /* Blink loop */
     while (1) {
@@ -221,7 +294,7 @@ int main(void) {
         GPIO_TogglePins(GPIOE,LED2);            // Toggle LED2
 
         Delay(DELAYVAL);
-        GPIO_WritePins(GPIOE,0,LED1|LED2);      // Turn On All LEDs
+        GPIO_ClearAndSet(GPIOE,0,LED1|LED2);      // Turn On All LEDs
 
     }
 }
