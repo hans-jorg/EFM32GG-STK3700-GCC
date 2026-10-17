@@ -138,44 +138,50 @@ Examples for the EFM32GG-STK3700 Development Board
 
 In all examples, a direct access to registers approach was used. It means that no library besides CMSIS was used.
 
--    01-Blink-Very-Simple: Blink LEDs with direct access to registers
--    02-Blink-Simple-GPIO-HAL-1: Blink LEDs with simple GPIO
--    02-Blink-Simple-GPIO-HAL-2: Blink LEDs with a GPIO module
--    03-Blink-Layered-LED-HAL: Blink LEDs with a LED module over a GPIO module
--    04-Blink-LED-HAL: Blink LEDs with a LED module with direct access to registers
--    05-Using-SysTick: Blink LEDs using SysTick timer
--    06-Changing-Clock-Frequency: Blink LEDs when changing CPU frequency
--    07-Using-a-State-Machine: Blink LEDs using a state machine
--    08-Software-Timers: Blink LEDs using (software) timers
--    09-Button-Polling: Polling buttons
--    10-Button-Interrupt: Buttons generate interrupt
--    11-Implementing-Debounce: Debouncing buttons
--    12-UART-Polling: Simple UART interface using polling
--    13-UART-Interrupt: Advanced UART interface using interrupts and buffers
--    \*\*X14-UART-DMA: UART using DMA
--    15-Mini-stdio: A simple and small module with some stdio routines
--    16-Using-Newlib: Using the newlib (part of ARM GNU C Compiler)
--    17-Using-a-Time-Triggered-Approach: Using Pont [PTTES](https://www.safetty.net/publications/pttes) approach
--    18-Using-a-Better-Time-Triggered-Approach: Using Pont [ERES](https://www.safetty.net/publications/the-engineering-of-reliable-embedded-systems-second-edition) approach
--    19-Using-Protothreads: Using [Dunkels](http://dunkels.com/adam/pt/) protothreads
--    20-Using-FreeRTOS: Using [FreeRTOS](https://www.freertos.org/)
--    21-Using-FreeRTOS-with-Interrupts: Using [FreeRTOS](https://www.freertos.org/) and interrupts
--    22-Using-uC-OS2: Using [uc/OS2](https://github.com/weston-embedded/uC-OS2)
--    23-Using-uC-OS2-with-Interrupts:
--    24-Using-uC-OS3:
--    25-Using-uC-OS3-with-Interrupts:
--    26-Using-the-LCD: Using the onboard LCD (with a simple module)
--    27-Implementing-a-better-Newlib: More advanced implementation of newlib interface
--    28-Getting-Temperature: Showing the temperature from internal sensor
--    29-Software-based-Quadrature-Decoding: Reading the encoder with a state machine
--    30-Hardware-based-Quadrature-Decoding: Reading the encoder using HW timer
--    31-Using-the-Slider-Control: Using the on board slider
--    32-Generating-PWM-Signal: Generating PWM signals using HW timer
--    \*\*X33-I2CMaster-Polling
--    \*\*X34-I2CMaster-Interrupt
--    \*\*X41-USB-Device-Barebone
--    \*\*X42-USB-Device-TinyUSB: USB interface using a middleware
--    \*\*X43-NAND-Flash
+
+- 01-Blink-Very-Simple
+- 02-Blink-Simple-HAL-GPIO
+- 03-Blink-Simple-HAL-GPIO-Module
+- 04-Blink-Simple-HAL-GPIO-Using-Inlines
+- 05-Blink-Layered-HAL-LED-GPIO
+- 06-Blink-LED-HAL
+- 07-Using-SysTick
+- 08-Changing-Clock-Frequency
+- 09-Using-a-State-Machine
+- 10-Software-Timers
+- 11-Button-Polling
+- 12-Button-Interrupt
+- 13-Implementing-Debounce
+- 14-UART-Polling
+- 15-UART-Interrupt
+- 16-UART-DMA
+- 17-Mini-stdio
+- 18-Using-Newlib
+- 19-Using-a-Time-Triggered-Approach
+- 20-Using-a-Better-Time-Triggered-Approach
+- 21-Using-Protothreads
+- 22-Using-FreeRTOS
+- 23-Using-FreeRTOS-with-Interrupts
+- 24-Using-uC-OS2
+- 25-Using-uC-OS2-with-Interrupts
+- 26-Using-uC-OS3
+- 27-Using-uC-OS3-with-Interrupts
+- 28-Using-the-LCD
+- 29-Implementing-a-better-Newlib
+- 30-Getting-Temperature
+- 31-Software-based-Quadrature-Decoding
+- 32-Hardware-based-Quadrature-Decoding
+- 33-Using-the-Slider-Control
+- 34-Generating-PWM-Signal
+- 35-DMA-Mem-Mem
+- 36-NAND-Flash
+- \*X14-UART-DMA
+- \*X33-I2CMaster-Polling
+- \*X34-I2CMaster-Interrupt
+- \*X41-USB-Device-Barebone
+- \*X42-USB-Device-TinyUSB
+- \*X45-DA-Converter
+- \*X46-Flash-LittleFS
 
 Notes:
 
