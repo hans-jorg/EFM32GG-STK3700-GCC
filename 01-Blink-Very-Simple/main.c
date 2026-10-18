@@ -27,8 +27,8 @@
 
 ///@{
 /// LEDs are on Port E
-#define LED1 BIT(2)
-#define LED2 BIT(3)
+#define LED0 BIT(2)
+#define LED1 BIT(3)
 ///@}
 
 /// Default delay value.
@@ -79,24 +79,24 @@ GPIO_P_TypeDef * const GPIOE = &(GPIO->P[4]);           // GPIOE
 #endif
 
     /* Initial values for LEDs */
-    GPIOE->DOUT &= ~(LED1|LED2);                                               // Turn Off LEDs
+    GPIOE->DOUT &= ~(LED0|LED1);                                               // Turn Off LEDs
 
     /* Blink loop */
     while (1) {
     // This is a trick to comment out a piece of code.
 #if 1
         // Alternating LEDs: -- *- ** *-
-        GPIOE->DOUT ^= LED1;
-        Delay(DELAYVAL);
+        GPIOE->DOUT ^= LED0;
+        Delay(DELAYVAL*5);
 
-        GPIOE->DOUT ^= LED2;
+        GPIOE->DOUT ^= LED1;
         Delay(DELAYVAL);
 #else
         // Blinking both LEDs at the same time: -- **
-        GPIOE->DOUT |= LED1;
+        GPIOE->DOUT |= (LED0|LED1);
         Delay(8*DELAYVAL);
 
-        GPIOE->DOUT &= ~(LED1);
+        GPIOE->DOUT &= ~(LED0|LED1);
         Delay(DELAYVAL);
 #endif
     }
